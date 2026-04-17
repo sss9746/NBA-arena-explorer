@@ -1,22 +1,16 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+"use client";
 
-export default function HomePage() {
+import ArenaMap from "@/components/ui/ArenaMap";
+import Navbar from "@/components/Navbar";
+
+export default function Home() {
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-5xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>NBA Arena Explorer</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              Explore NBA teams, arenas, locations, upcoming games, and ticket information.
-            </p>
-            <Button>Start Exploring</Button>
-          </CardContent>
-        </Card>
+    <main className="min-h-screen bg-black text-white">
+      <Navbar />
+
+      <div className="px-6 pt-6 pb-6">
+        <ArenaMap />
       </div>
     </main>
-  )
+  );
 }
