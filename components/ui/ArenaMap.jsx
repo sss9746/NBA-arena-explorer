@@ -1,10 +1,251 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CalendarDays,
+  Landmark,
+  MapPin,
+  Ticket,
+  Users,
+  UtensilsCrossed,
+} from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import ArenaDetailsTab from "@/components/ui/ArenaDetailsTab";
+import HeroBanner from "@/components/ui/HeroBanner";
+import PanelHeader from "@/components/ui/PanelHeader";
+import PlayersTab from "@/components/ui/PlayersTab";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+const TEAM_DETAILS = {
+  "Golden State Warriors": {
+    arena: "Chase Center",
+    location: "San Francisco, CA",
+    code: "GSW",
+    capacity: "18,064",
+    yearBuilt: "2019",
+    color: "#fbbf24",
+  },
+  "Los Angeles Lakers": {
+    arena: "Crypto.com Arena",
+    location: "Los Angeles, CA",
+    code: "LAL",
+    capacity: "19,079",
+    yearBuilt: "1999",
+    color: "#a855f7",
+  },
+  "Los Angeles Clippers": {
+    arena: "Intuit Dome",
+    location: "Inglewood, CA",
+    code: "LAC",
+    capacity: "18,000",
+    yearBuilt: "2024",
+    color: "#ef4444",
+  },
+  "Phoenix Suns": {
+    arena: "Footprint Center",
+    location: "Phoenix, AZ",
+    code: "PHX",
+    capacity: "17,071",
+    yearBuilt: "1992",
+    color: "#f97316",
+  },
+  "Sacramento Kings": {
+    arena: "Golden 1 Center",
+    location: "Sacramento, CA",
+    code: "SAC",
+    capacity: "17,608",
+    yearBuilt: "2016",
+    color: "#8b5cf6",
+  },
+  "Portland Trail Blazers": {
+    arena: "Moda Center",
+    location: "Portland, OR",
+    code: "POR",
+    capacity: "19,393",
+    yearBuilt: "1995",
+  },
+  "Utah Jazz": {
+    arena: "Delta Center",
+    location: "Salt Lake City, UT",
+    code: "UTA",
+    capacity: "18,306",
+    yearBuilt: "1991",
+  },
+  "Denver Nuggets": {
+    arena: "Ball Arena",
+    location: "Denver, CO",
+    code: "DEN",
+    capacity: "19,520",
+    yearBuilt: "1999",
+  },
+  "Oklahoma City Thunder": {
+    arena: "Paycom Center",
+    location: "Oklahoma City, OK",
+    code: "OKC",
+    capacity: "18,203",
+    yearBuilt: "2002",
+  },
+  "Minnesota Timberwolves": {
+    arena: "Target Center",
+    location: "Minneapolis, MN",
+    code: "MIN",
+    capacity: "18,798",
+    yearBuilt: "1990",
+  },
+  "Dallas Mavericks": {
+    arena: "American Airlines Center",
+    location: "Dallas, TX",
+    code: "DAL",
+    capacity: "19,200",
+    yearBuilt: "2001",
+  },
+  "Houston Rockets": {
+    arena: "Toyota Center",
+    location: "Houston, TX",
+    code: "HOU",
+    capacity: "18,055",
+    yearBuilt: "2003",
+  },
+  "San Antonio Spurs": {
+    arena: "Frost Bank Center",
+    location: "San Antonio, TX",
+    code: "SAS",
+    capacity: "18,418",
+    yearBuilt: "2002",
+  },
+  "New Orleans Pelicans": {
+    arena: "Smoothie King Center",
+    location: "New Orleans, LA",
+    code: "NOP",
+    capacity: "16,867",
+    yearBuilt: "1999",
+  },
+  "Memphis Grizzlies": {
+    arena: "FedExForum",
+    location: "Memphis, TN",
+    code: "MEM",
+    capacity: "18,119",
+    yearBuilt: "2004",
+  },
+  "Boston Celtics": {
+    arena: "TD Garden",
+    location: "Boston, MA",
+    code: "BOS",
+    capacity: "19,156",
+    yearBuilt: "1995",
+    color: "#22c55e",
+  },
+  "Brooklyn Nets": {
+    arena: "Barclays Center",
+    location: "Brooklyn, NY",
+    code: "BKN",
+    capacity: "17,732",
+    yearBuilt: "2012",
+  },
+  "New York Knicks": {
+    arena: "Madison Square Garden",
+    location: "New York, NY",
+    code: "NYK",
+    capacity: "19,812",
+    yearBuilt: "1968",
+  },
+  "Philadelphia 76ers": {
+    arena: "Wells Fargo Center",
+    location: "Philadelphia, PA",
+    code: "PHI",
+    capacity: "20,478",
+    yearBuilt: "1996",
+  },
+  "Toronto Raptors": {
+    arena: "Scotiabank Arena",
+    location: "Toronto, ON",
+    code: "TOR",
+    capacity: "19,800",
+    yearBuilt: "1999",
+  },
+  "Chicago Bulls": {
+    arena: "United Center",
+    location: "Chicago, IL",
+    code: "CHI",
+    capacity: "20,917",
+    yearBuilt: "1994",
+    color: "#ef4444",
+  },
+  "Cleveland Cavaliers": {
+    arena: "Rocket Arena",
+    location: "Cleveland, OH",
+    code: "CLE",
+    capacity: "19,432",
+    yearBuilt: "1994",
+  },
+  "Detroit Pistons": {
+    arena: "Little Caesars Arena",
+    location: "Detroit, MI",
+    code: "DET",
+    capacity: "20,062",
+    yearBuilt: "2017",
+  },
+  "Indiana Pacers": {
+    arena: "Gainbridge Fieldhouse",
+    location: "Indianapolis, IN",
+    code: "IND",
+    capacity: "17,274",
+    yearBuilt: "1999",
+  },
+  "Milwaukee Bucks": {
+    arena: "Fiserv Forum",
+    location: "Milwaukee, WI",
+    code: "MIL",
+    capacity: "17,341",
+    yearBuilt: "2018",
+  },
+  "Atlanta Hawks": {
+    arena: "State Farm Arena",
+    location: "Atlanta, GA",
+    code: "ATL",
+    capacity: "16,888",
+    yearBuilt: "1999",
+  },
+  "Charlotte Hornets": {
+    arena: "Spectrum Center",
+    location: "Charlotte, NC",
+    code: "CHA",
+    capacity: "19,077",
+    yearBuilt: "2005",
+  },
+  "Miami Heat": {
+    arena: "Kaseya Center",
+    location: "Miami, FL",
+    code: "MIA",
+    capacity: "19,600",
+    yearBuilt: "1999",
+    color: "#f97316",
+  },
+  "Orlando Magic": {
+    arena: "Kia Center",
+    location: "Orlando, FL",
+    code: "ORL",
+    capacity: "18,846",
+    yearBuilt: "2010",
+  },
+  "Washington Wizards": {
+    arena: "Capital One Arena",
+    location: "Washington, DC",
+    code: "WAS",
+    capacity: "20,356",
+    yearBuilt: "1997",
+  },
+};
+
+const PANEL_TABS = [
+  { id: "players", label: "Players", icon: Users },
+  { id: "arena", label: "Arena", icon: Landmark },
+  { id: "games", label: "Games", icon: CalendarDays },
+  { id: "tickets", label: "Tickets", icon: Ticket },
+  { id: "restaurants", label: "Food", icon: UtensilsCrossed },
+];
 
 const teams = [
   { name: "Golden State Warriors", coordinates: [-122.3877, 37.768], logo: "/logos/warriors.png", arenaImage: "/arenas/warriors-arena.jpg", players: [{ name: "Stephen Curry", image: "/players/curry.jpeg" }, { name: "Warriors Player 2", image: "/players/warriors-player-2.jpg" }] },
@@ -39,14 +280,42 @@ const teams = [
   { name: "Washington Wizards", coordinates: [-77.0209, 38.8981], logo: "/logos/wizards.png", arenaImage: "/arenas/wizards-arena.jpg", players: [{ name: "Wizards Player 1", image: "/players/wizards-player-1.jpg" }, { name: "Wizards Player 2", image: "/players/wizards-player-2.jpg" }] },
 ];
 
+function getPanelDetails(team) {
+  return (
+    TEAM_DETAILS[team.name] || {
+      arena: "Home Arena",
+      location: "NBA",
+      code: team.name
+        .split(" ")
+        .slice(0, 3)
+        .map((word) => word[0])
+        .join("")
+        .toUpperCase(),
+      capacity: "TBD",
+      yearBuilt: "TBD",
+      color: "#22c55e",
+    }
+  );
+}
+
 export default function ArenaMap() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(350);
+  const [panelWidth, setPanelWidth] = useState(420);
   const [isResizing, setIsResizing] = useState(false);
-  const [activeTab, setActiveTab] = useState("arena");
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState("players");
+  const [brokenImages, setBrokenImages] = useState({});
+
+  const panelDetails = useMemo(
+    () => (selectedTeam ? getPanelDetails(selectedTeam) : null),
+    [selectedTeam]
+  );
+
+  const arenaImageMissing =
+    selectedTeam?.arenaImage && brokenImages[selectedTeam.arenaImage];
 
   useEffect(() => {
     if (mapRef.current || !mapContainer.current) return;
@@ -67,7 +336,7 @@ export default function ArenaMap() {
       const markerButton = document.createElement("button");
       markerButton.type = "button";
       markerButton.className =
-        "flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-white shadow-lg ring-2 ring-black/25 transition duration-150 group-hover:scale-110 focus:outline-none focus:ring-4 focus:ring-yellow-400";
+        "flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-white shadow-lg ring-2 ring-black/25 transition duration-150 group-hover:scale-110 focus:outline-none focus:ring-4 focus:ring-emerald-400";
       markerButton.setAttribute("aria-label", `Open ${team.name} details`);
 
       const logoEl = document.createElement("img");
@@ -107,6 +376,9 @@ export default function ArenaMap() {
       markerEl.addEventListener("click", () => {
         setSelectedTeam(team);
         setPanelOpen(true);
+        setActiveTab("players");
+        setIsExpanded(false);
+        setPanelWidth(420);
       });
 
       markerEl.addEventListener("mouseenter", () => {
@@ -130,9 +402,10 @@ export default function ArenaMap() {
     const handleMouseMove = (event) => {
       if (!isResizing) return;
 
-      const maxWidth = window.innerWidth * 0.9;
+      const maxWidth = Math.min(window.innerWidth * 0.92, 620);
       const nextWidth = window.innerWidth - event.clientX;
-      setPanelWidth(Math.min(Math.max(nextWidth, 320), maxWidth));
+      setPanelWidth(Math.min(Math.max(nextWidth, 360), maxWidth));
+      setIsExpanded(nextWidth >= 520);
     };
 
     const handleMouseUp = () => {
@@ -154,139 +427,191 @@ export default function ArenaMap() {
     };
   }, [isResizing]);
 
+  const handleImageError = (src) => {
+    setBrokenImages((current) =>
+      current[src] ? current : { ...current, [src]: true }
+    );
+  };
+
+  const handleToggleExpand = () => {
+    const nextExpanded = !isExpanded;
+    setIsExpanded(nextExpanded);
+    setPanelWidth(nextExpanded ? 560 : 420);
+  };
+
+  const renderPanelContent = () => {
+    if (!selectedTeam || !panelDetails) return null;
+
+    if (activeTab === "players") {
+      return <PlayersTab players={selectedTeam.players} />;
+    }
+
+    if (activeTab === "arena") {
+      const [lat, lng] = [
+        selectedTeam.coordinates[1],
+        selectedTeam.coordinates[0],
+      ];
+
+      return (
+        <ArenaDetailsTab
+          team={{
+            ...selectedTeam,
+            capacity: panelDetails.capacity,
+            yearBuilt: panelDetails.yearBuilt,
+            city: panelDetails.location,
+            lat,
+            lng,
+          }}
+        />
+      );
+    }
+
+    if (activeTab === "games") {
+      return (
+        <section className="px-1 pt-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+            Games
+          </p>
+          <p className="mt-4 text-sm text-zinc-400">
+            Upcoming home games can live here once you add schedule data.
+          </p>
+        </section>
+      );
+    }
+
+    if (activeTab === "tickets") {
+      return (
+        <section className="px-1 pt-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+            Tickets
+          </p>
+          <p className="mt-4 text-sm text-zinc-400">
+            Ticket links and pricing modules can slot into this section.
+          </p>
+        </section>
+      );
+    }
+
+    return (
+      <section className="px-1 pt-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+          Food Nearby
+        </p>
+        <p className="mt-4 text-sm text-zinc-400">
+          Restaurant recommendations can appear here once that data is wired in.
+        </p>
+      </section>
+    );
+  };
+
   return (
-    <div className="relative h-[calc(100vh-120px)] w-full overflow-hidden rounded-2xl border border-zinc-800">
+    <div className="relative h-[calc(100vh-120px)] w-full overflow-hidden rounded-lg border border-zinc-800">
       <div ref={mapContainer} className="h-full w-full" />
 
-      {panelOpen && selectedTeam ? (
-        <aside
-          className="fixed right-0 top-0 z-[70] flex h-screen max-w-full flex-col overflow-hidden bg-white text-zinc-950 shadow-2xl"
-          style={{ width: `${panelWidth}px` }}
-        >
-          <div
-            className="absolute left-0 top-0 z-10 h-full w-2 cursor-ew-resize bg-transparent hover:bg-zinc-200/60"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              setIsResizing(true);
-            }}
+      {panelOpen && selectedTeam && panelDetails ? (
+        <>
+          <button
+            type="button"
+            className="absolute inset-0 z-[65] bg-black/35 backdrop-blur-[2px]"
+            aria-label="Close team details"
+            onClick={() => setPanelOpen(false)}
           />
 
-          <div className="flex items-start justify-between border-b border-zinc-200 px-6 py-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                NBA Arena
-              </p>
-              <h2 className="mt-2 text-2xl font-bold leading-tight">
-                {selectedTeam.name}
-              </h2>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setPanelOpen(false)}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-2xl leading-none text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-zinc-900"
-              aria-label="Close team details"
-            >
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-
-          <div className="h-52 w-full bg-gray-200">
-            <img
-              src={selectedTeam.arenaImage}
-              alt={`${selectedTeam.name} arena`}
-              className="h-full w-full object-cover"
+          <aside
+            className="dark fixed right-0 top-0 z-[70] flex h-screen max-w-[92vw] flex-col overflow-hidden border-l border-white/10 bg-[#11151d] text-white shadow-2xl shadow-black/50"
+            style={{ width: `${panelWidth}px` }}
+          >
+            <div
+              className="absolute left-0 top-0 z-10 h-full w-2 cursor-ew-resize bg-transparent hover:bg-white/6"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                setIsResizing(true);
+              }}
             />
-          </div>
 
-          <div className="flex gap-4 overflow-x-auto border-b border-zinc-200 px-4 pt-3">
-            <button
-              type="button"
-              onClick={() => setActiveTab("players")}
-              className={`pb-2 text-sm font-medium ${
-                activeTab === "players"
-                  ? "border-b-2 border-blue-500 text-black"
-                  : "text-gray-500 hover:text-black"
-              }`}
-            >
-              Players
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("arena")}
-              className={`pb-2 text-sm font-medium ${
-                activeTab === "arena"
-                  ? "border-b-2 border-blue-500 text-black"
-                  : "text-gray-500 hover:text-black"
-              }`}
-            >
-              Arena Details
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("games")}
-              className={`pb-2 text-sm font-medium ${
-                activeTab === "games"
-                  ? "border-b-2 border-blue-500 text-black"
-                  : "text-gray-500 hover:text-black"
-              }`}
-            >
-              Upcoming Games
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("tickets")}
-              className={`pb-2 text-sm font-medium ${
-                activeTab === "tickets"
-                  ? "border-b-2 border-blue-500 text-black"
-                  : "text-gray-500 hover:text-black"
-              }`}
-            >
-              Tickets
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("restaurants")}
-              className={`pb-2 text-sm font-medium ${
-                activeTab === "restaurants"
-                  ? "border-b-2 border-blue-500 text-black"
-                  : "text-gray-500 hover:text-black"
-              }`}
-            >
-              Restaurants Nearby
-            </button>
-          </div>
+            <div className="flex h-full flex-col overflow-hidden">
+              <div className="shrink-0 pb-5 pt-4 sm:pb-6">
+                <PanelHeader
+                  team={{
+                    name: selectedTeam.name,
+                    arena: panelDetails.arena,
+                    logo: selectedTeam.logo,
+                    color: panelDetails.color,
+                  }}
+                  onClose={() => setPanelOpen(false)}
+                  isExpanded={isExpanded}
+                  onToggleExpand={handleToggleExpand}
+                />
 
-          <div className="flex-1 overflow-y-auto p-4">
-            {activeTab === "players" ? (
-              selectedTeam.players?.length ? (
-                <div className="flex flex-col">
-                  {selectedTeam.players.map((player) => (
-                    <div
-                      key={player.name}
-                      className="flex items-center gap-3 border-b border-zinc-200 p-3"
-                    >
-                      <img
-                        src={player.image}
-                        alt={player.name}
-                        className="h-10 w-10 rounded-full object-cover"
-                      />
-                      <p className="font-medium text-black">{player.name}</p>
+                {!arenaImageMissing ? (
+                  <HeroBanner
+                    team={{
+                      bannerImage: selectedTeam.arenaImage,
+                      arena: panelDetails.arena,
+                      city: panelDetails.location,
+                      color: panelDetails.color,
+                      abbreviation: panelDetails.code,
+                    }}
+                    onImageError={() => handleImageError(selectedTeam.arenaImage)}
+                  />
+                ) : (
+                  <div className="relative mx-5 mt-8 aspect-video overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top,#134e4a_0%,#0f172a_36%,#020617_100%)] sm:mx-6">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={selectedTeam.logo}
+                      alt=""
+                      className="absolute inset-0 m-auto h-28 w-28 object-contain opacity-20"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <h3 className="text-base font-bold text-white">
+                        {panelDetails.arena}
+                      </h3>
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-white/70" />
+                        <span className="text-xs font-medium text-white/70">
+                          {panelDetails.location}
+                        </span>
+                      </div>
                     </div>
-                  ))}
+                    <div
+                      className="absolute right-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white"
+                      style={{ background: panelDetails.color }}
+                    >
+                      {panelDetails.code}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mx-5 mt-6 grid grid-cols-5 gap-2 border-b border-white/8 pb-5 sm:mx-6">
+                  {PANEL_TABS.map((tab) => {
+                    const Icon = tab.icon;
+
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`inline-flex h-14 min-w-0 items-center justify-center gap-2 rounded-full px-3 text-xs font-semibold transition sm:text-sm ${
+                          activeTab === tab.id
+                            ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/25"
+                            : "text-zinc-400 hover:bg-white/6 hover:text-white"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden="true" />
+                        <span className="truncate">{tab.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              ) : (
-                <p>No player data available</p>
-              )
-            ) : null}
-            {activeTab === "arena" ? <p>Arena details here</p> : null}
-            {activeTab === "games" ? <p>Upcoming games here</p> : null}
-            {activeTab === "tickets" ? <p>Ticket info here</p> : null}
-            {activeTab === "restaurants" ? (
-              <p>Restaurants near the arena here</p>
-            ) : null}
-          </div>
-        </aside>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 sm:px-6">
+                {renderPanelContent()}
+              </div>
+            </div>
+          </aside>
+        </>
       ) : null}
     </div>
   );
