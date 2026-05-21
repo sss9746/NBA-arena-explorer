@@ -34,11 +34,14 @@ export default function PanelHeader({
         </motion.div>
 
         <div className="min-w-0 flex-1">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+            Arena Guide
+          </p>
           <motion.h2
             initial={{ x: -10, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.15 }}
-            className="truncate text-lg font-bold tracking-tight text-foreground"
+            className="truncate text-base font-semibold tracking-tight text-foreground sm:text-lg"
           >
             {team.name}
           </motion.h2>
@@ -46,7 +49,7 @@ export default function PanelHeader({
             initial={{ x: -10, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="truncate text-sm text-muted-foreground"
+            className="mt-0.5 truncate text-xs font-medium text-muted-foreground sm:text-sm"
           >
             {team.arena}
           </motion.p>

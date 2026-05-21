@@ -2,11 +2,31 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, MapPin, Route, Send, Sparkles, X } from "lucide-react";
+import {
+  Bot,
+  ExternalLink,
+  MapPin,
+  Route,
+  Send,
+  Sparkles,
+  Utensils,
+  X,
+} from "lucide-react";
 import SilverMessageContent from "@/components/SilverMessageContent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { arenas } from "@/data";
+import {
+  fetchNearbyNBAGames,
+  type NearbyGamesSource,
+  type NearbyNBAGame,
+} from "@/src/lib/ticketmaster";
+import {
+  fetchNearbyRestaurants,
+  type NearbyRestaurant,
+} from "@/src/lib/restaurants";
+import { useUserLocation } from "@/src/hooks/useUserLocation";
 
 type Message = {
   id: string;
@@ -22,6 +42,8 @@ type SilverApiResponse = {
 type SilverChatPanelProps = {
   open: boolean;
   onClose: () => void;
+  selectedTeamName: string | null;
+  selectedArenaName: string | null;
 };
 
 const SUGGESTIONS = [
@@ -30,6 +52,11 @@ const SUGGESTIONS = [
   "Best West Coast arena route",
 ];
 
+const NEARBY_GAME_INTENT_REGEX =
+  /\b(closest games|nearby games|games near me|plan a trip|road trip|tickets?|arena near me|nba game near me|weekend game|near me|nearby|closest)\b/i;
+const RESTAURANT_INTENT_REGEX =
+  /\b(restaurant|restaurants|food|eat|dinner|lunch|pregame|pre-game|postgame|post-game|before tipoff|before the game|after the game|full nba trip|plan a trip|road trip)\b/i;
+
 const STARTER_MESSAGE: Message = {
   id: "starter-assistant",
   role: "assistant",
@@ -37,18 +64,73 @@ const STARTER_MESSAGE: Message = {
     "Hey, I’m Silver. Ask me to plan an NBA road trip, find nearby arenas, or compare teams and venues.",
 };
 
+function toSilverLocation(
+  location: { latitude: number; longitude: number } | null
+) {
+  if (!location) {
+    return null;
+  }
+
+  return {
+    lat: location.latitude,
+    lng: location.longitude,
+  };
+}
+
+function formatPriceLevel(priceLevel: string | null) {
+  if (!priceLevel) {
+    return null;
+  }
+
+  return priceLevel
+    .replace(/^PRICE_LEVEL_/, "")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export default function SilverChatPanel({
   open,
   onClose,
+  selectedTeamName,
+  selectedArenaName,
 }: SilverChatPanelProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([STARTER_MESSAGE]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isNearbyGamesLoading, setIsNearbyGamesLoading] = useState(false);
+  const [nearbyGamesCount, setNearbyGamesCount] = useState<number | null>(null);
+  const [nearbyGamesSource, setNearbyGamesSource] =
+    useState<NearbyGamesSource | null>(null);
+  const [nearbyGamesError, setNearbyGamesError] = useState<string | null>(null);
+  const [isRestaurantsLoading, setIsRestaurantsLoading] = useState(false);
+  const [nearbyRestaurants, setNearbyRestaurants] = useState<NearbyRestaurant[]>(
+    []
+  );
+  const [nearbyRestaurantsError, setNearbyRestaurantsError] = useState<
+    string | null
+  >(null);
+  const [nearbyRestaurantsLoaded, setNearbyRestaurantsLoaded] = useState(false);
+  const [restaurantSearchLabel, setRestaurantSearchLabel] = useState<
+    string | null
+  >(null);
+  const {
+    location: userLocation,
+    loading: isLocationLoading,
+    error: locationError,
+    getUserLocation,
+  } = useUserLocation();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const messageIdRef = useRef(0);
 
   const suggestionChips = useMemo(() => SUGGESTIONS, []);
+  const selectedArena = useMemo(
+    () =>
+      selectedArenaName
+        ? arenas.find((arena) => arena.arenaName === selectedArenaName) ?? null
+        : null,
+    [selectedArenaName]
+  );
 
   useEffect(() => {
     if (!open) {
@@ -79,6 +161,182 @@ export default function SilverChatPanel({
     });
   }, [messages, open]);
 
+  const shouldFetchNearbyGames = (message: string) =>
+    NEARBY_GAME_INTENT_REGEX.test(message);
+  const shouldFetchRestaurants = (message: string) =>
+    RESTAURANT_INTENT_REGEX.test(message);
+
+  const maybeResolveUserLocation = async (message: string) => {
+    if (!shouldFetchNearbyGames(message) && !shouldFetchRestaurants(message)) {
+      return userLocation;
+    }
+
+    if (userLocation) {
+      return userLocation;
+    }
+
+    try {
+      const resolvedLocation = await getUserLocation();
+
+      if (resolvedLocation) {
+        return resolvedLocation;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleUseLocation = async () => {
+    // User clicks the button; the hook asks the browser for permission.
+    // If allowed, the hook stores latitude and longitude in component state.
+    // If denied, the hook exposes a friendly error for the UI.
+    await getUserLocation();
+  };
+
+  const maybeFetchNearbyGames = async (message: string) => {
+    if (!shouldFetchNearbyGames(message)) {
+      return {
+        nearbyGames: [] as NearbyNBAGame[],
+        nearbyGamesError: null as string | null,
+        nearbyGamesSource: null as NearbyGamesSource | null,
+        fallbackUsed: false,
+      };
+    }
+
+    const resolvedLocation = await maybeResolveUserLocation(message);
+
+    if (!resolvedLocation) {
+      return {
+        nearbyGames: [] as NearbyNBAGame[],
+        nearbyGamesError:
+          "Live nearby games were not loaded because your browser location is unavailable.",
+        nearbyGamesSource: null as NearbyGamesSource | null,
+        fallbackUsed: false,
+        resolvedLocation,
+      };
+    }
+
+    setIsNearbyGamesLoading(true);
+    setNearbyGamesError(null);
+
+    try {
+      const nearbyGamesResult = await fetchNearbyNBAGames(resolvedLocation);
+      setNearbyGamesCount(nearbyGamesResult.games.length);
+      setNearbyGamesSource(nearbyGamesResult.source);
+
+      return {
+        nearbyGames: nearbyGamesResult.games,
+        nearbyGamesError: null,
+        nearbyGamesSource: nearbyGamesResult.source,
+        fallbackUsed: nearbyGamesResult.fallbackUsed,
+        resolvedLocation,
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Live nearby games could not be loaded.";
+      setNearbyGamesCount(null);
+      setNearbyGamesSource(null);
+      setNearbyGamesError(errorMessage);
+
+      return {
+        nearbyGames: [] as NearbyNBAGame[],
+        nearbyGamesError: errorMessage,
+        nearbyGamesSource: null as NearbyGamesSource | null,
+        fallbackUsed: false,
+        resolvedLocation,
+      };
+    } finally {
+      setIsNearbyGamesLoading(false);
+    }
+  };
+
+  const maybeFetchNearbyRestaurants = async ({
+    message,
+    resolvedLocation,
+    nearbyGames,
+  }: {
+    message: string;
+    resolvedLocation: { latitude: number; longitude: number } | null;
+    nearbyGames: NearbyNBAGame[];
+  }) => {
+    if (!shouldFetchRestaurants(message)) {
+      return {
+        nearbyRestaurants: [] as NearbyRestaurant[],
+        nearbyRestaurantsError: null as string | null,
+        selectedGame: null as NearbyNBAGame | null,
+      };
+    }
+
+    const selectedGame =
+      nearbyGames.find(
+        (game) => game.latitude != null && game.longitude != null
+      ) ?? null;
+    const targetLocation = selectedGame
+      ? {
+          latitude: selectedGame.latitude as number,
+          longitude: selectedGame.longitude as number,
+        }
+      : selectedArena
+        ? {
+            latitude: selectedArena.latitude,
+            longitude: selectedArena.longitude,
+          }
+        : resolvedLocation;
+    const targetLabel =
+      selectedGame?.venue ??
+      selectedArena?.arenaName ??
+      (targetLocation ? "your location" : null);
+
+    if (!targetLocation) {
+      const errorMessage =
+        "Could not load restaurants because no arena, game venue, or location is available.";
+      setNearbyRestaurants([]);
+      setNearbyRestaurantsLoaded(false);
+      setRestaurantSearchLabel(null);
+      setNearbyRestaurantsError(errorMessage);
+
+      return {
+        nearbyRestaurants: [] as NearbyRestaurant[],
+        nearbyRestaurantsError: errorMessage,
+        selectedGame,
+      };
+    }
+
+    setIsRestaurantsLoading(true);
+    setNearbyRestaurantsError(null);
+    setNearbyRestaurantsLoaded(false);
+    setRestaurantSearchLabel(targetLabel);
+
+    try {
+      const result = await fetchNearbyRestaurants(targetLocation);
+      setNearbyRestaurants(result.restaurants);
+      setNearbyRestaurantsLoaded(true);
+
+      return {
+        nearbyRestaurants: result.restaurants,
+        nearbyRestaurantsError: null,
+        selectedGame,
+      };
+    } catch {
+      const errorMessage = "Could not load restaurants right now.";
+      setNearbyRestaurants([]);
+      setNearbyRestaurantsLoaded(false);
+      setNearbyRestaurantsError(errorMessage);
+
+      return {
+        nearbyRestaurants: [] as NearbyRestaurant[],
+        nearbyRestaurantsError: errorMessage,
+        selectedGame,
+      };
+    } finally {
+      setIsRestaurantsLoading(false);
+    }
+  };
+
   const sendMessage = async (rawMessage: string) => {
     const message = rawMessage.trim();
 
@@ -101,12 +359,51 @@ export default function SilverChatPanel({
     setIsLoading(true);
 
     try {
+      const {
+        nearbyGames,
+        nearbyGamesError: liveNearbyGamesError,
+        nearbyGamesSource: liveNearbyGamesSource,
+        fallbackUsed,
+        resolvedLocation = await maybeResolveUserLocation(message),
+      } = await maybeFetchNearbyGames(message);
+      const {
+        nearbyRestaurants: liveNearbyRestaurants,
+        nearbyRestaurantsError: liveNearbyRestaurantsError,
+        selectedGame,
+      } = await maybeFetchNearbyRestaurants({
+        message,
+        resolvedLocation,
+        nearbyGames,
+      });
+
       const response = await fetch("/api/silver", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({
+          message,
+          selectedTeamName,
+          selectedArenaName,
+          userLocation: toSilverLocation(resolvedLocation),
+          context: {
+            userLocation: resolvedLocation
+              ? {
+                  latitude: resolvedLocation.latitude,
+                  longitude: resolvedLocation.longitude,
+                  accuracy: resolvedLocation.accuracy ?? null,
+                }
+              : null,
+            nearbyGames,
+            nearbyGamesSource: liveNearbyGamesSource,
+            fallbackUsed,
+            nearbyGamesError: liveNearbyGamesError,
+            selectedArena,
+            selectedGame,
+            nearbyRestaurants: liveNearbyRestaurants,
+            nearbyRestaurantsError: liveNearbyRestaurantsError,
+          },
+        }),
       });
 
       const data = (await response.json()) as SilverApiResponse;
@@ -221,6 +518,20 @@ export default function SilverChatPanel({
               className="flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6"
             >
               <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleUseLocation();
+                  }}
+                  disabled={isLocationLoading}
+                  className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/35 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <MapPin className="h-3.5 w-3.5 text-cyan-300" />
+                  <span>
+                    {isLocationLoading ? "Getting location..." : "Use My Location"}
+                  </span>
+                </button>
+
                 {suggestionChips.map((suggestion, index) => {
                   const icons = [Route, MapPin, Sparkles] as const;
                   const Icon = icons[index] ?? Sparkles;
@@ -241,6 +552,154 @@ export default function SilverChatPanel({
                   );
                 })}
               </div>
+
+              {userLocation ? (
+                <p className="text-xs leading-5 text-zinc-400">
+                  Location saved: {userLocation.latitude.toFixed(5)},{" "}
+                  {userLocation.longitude.toFixed(5)}
+                  <span className="text-zinc-500">
+                    {" "}
+                    ({Math.round(userLocation.accuracy)}m accuracy)
+                  </span>
+                </p>
+              ) : null}
+
+              {locationError ? (
+                <p className="text-xs leading-5 text-amber-200/90">
+                  {locationError}
+                </p>
+              ) : null}
+
+              {isNearbyGamesLoading ? (
+                <p className="text-xs leading-5 text-cyan-200/90">
+                  Checking live NBA games near you...
+                </p>
+              ) : null}
+
+              {nearbyGamesCount != null && !isNearbyGamesLoading ? (
+                <p className="text-xs leading-5 text-zinc-500">
+                  Live nearby games loaded: {nearbyGamesCount}
+                  {nearbyGamesSource === "ticketmaster_basketball_filtered"
+                    ? " (filtered basketball search)"
+                    : ""}
+                </p>
+              ) : null}
+
+              {nearbyGamesError ? (
+                <p className="text-xs leading-5 text-amber-200/90">
+                  {nearbyGamesError}
+                </p>
+              ) : null}
+
+              {isRestaurantsLoading ? (
+                <p className="text-xs leading-5 text-cyan-200/90">
+                  Finding restaurants near the arena...
+                </p>
+              ) : null}
+
+              {nearbyRestaurantsError ? (
+                <p className="text-xs leading-5 text-amber-200/90">
+                  {nearbyRestaurantsError}
+                </p>
+              ) : null}
+
+              {nearbyRestaurantsLoaded && !nearbyRestaurants.length ? (
+                <p className="text-xs leading-5 text-zinc-500">
+                  No nearby restaurants found.
+                </p>
+              ) : null}
+
+              {nearbyRestaurants.length ? (
+                <section className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Utensils
+                        className="h-4 w-4 shrink-0 text-cyan-300"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-white">
+                          Nearby Restaurants
+                        </h3>
+                        {restaurantSearchLabel ? (
+                          <p className="truncate text-xs text-zinc-500">
+                            Near {restaurantSearchLabel}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {nearbyRestaurants.slice(0, 4).map((restaurant) => {
+                      const priceLevel = formatPriceLevel(restaurant.priceLevel);
+
+                      return (
+                        <article
+                          key={restaurant.id}
+                          className="rounded-xl border border-white/8 bg-black/20 p-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h4 className="truncate text-sm font-semibold text-zinc-100">
+                                {restaurant.name}
+                              </h4>
+                              <p className="mt-1 text-xs leading-5 text-zinc-400">
+                                {restaurant.rating != null
+                                  ? `${restaurant.rating.toFixed(1)} rating`
+                                  : "Rating unavailable"}
+                                {restaurant.userRatingCount != null
+                                  ? ` · ${restaurant.userRatingCount} reviews`
+                                  : ""}
+                              </p>
+                            </div>
+
+                            {restaurant.googleMapsUrl ? (
+                              <a
+                                href={restaurant.googleMapsUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                aria-label={`Open ${restaurant.name} in Google Maps`}
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-300/10 text-cyan-200 transition hover:bg-cyan-300/15"
+                              >
+                                <ExternalLink
+                                  className="h-3.5 w-3.5"
+                                  aria-hidden="true"
+                                />
+                              </a>
+                            ) : null}
+                          </div>
+
+                          <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-zinc-300">
+                            {priceLevel ? (
+                              <span className="rounded-full border border-white/8 bg-white/5 px-2 py-1">
+                                {priceLevel}
+                              </span>
+                            ) : null}
+                            {restaurant.openNow != null ? (
+                              <span
+                                className={cn(
+                                  "rounded-full border px-2 py-1",
+                                  restaurant.openNow
+                                    ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200"
+                                    : "border-amber-300/20 bg-amber-300/10 text-amber-200"
+                                )}
+                              >
+                                {restaurant.openNow ? "Open now" : "Closed"}
+                              </span>
+                            ) : null}
+                            {restaurant.distanceMiles != null ? (
+                              <span className="rounded-full border border-white/8 bg-white/5 px-2 py-1">
+                                {restaurant.distanceMiles.toFixed(1)} mi
+                              </span>
+                            ) : null}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+              ) : null}
 
               <div className="space-y-4">
                 {messages.map((message) => (

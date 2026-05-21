@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
+  ExternalLink,
   Landmark,
   MapPin,
+  RefreshCw,
   Ticket,
   Users,
   UtensilsCrossed,
@@ -15,6 +17,9 @@ import ArenaDetailsTab from "@/components/ui/ArenaDetailsTab";
 import HeroBanner from "@/components/ui/HeroBanner";
 import PanelHeader from "@/components/ui/PanelHeader";
 import PlayersTab from "@/components/ui/PlayersTab";
+import TicketmasterEventsTab from "@/components/ui/TicketmasterEventsTab";
+import { arenas as nbaArenas } from "@/data";
+import { fetchNearbyRestaurants } from "@/src/lib/restaurants";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -298,7 +303,203 @@ function getPanelDetails(team) {
   );
 }
 
-export default function ArenaMap() {
+const EMPTY_LIVE_EVENTS_STATE = {
+  events: [],
+  loading: false,
+  loaded: false,
+  error: null,
+};
+
+function formatPriceLevel(priceLevel) {
+  if (!priceLevel) {
+    return null;
+  }
+
+  return priceLevel
+    .replace(/^PRICE_LEVEL_/, "")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getOpenStatus(openNow) {
+  if (openNow == null) {
+    return "Hours unavailable";
+  }
+
+  return openNow ? "Open now" : "Closed";
+}
+
+function RestaurantsTab({
+  restaurants,
+  isLoading,
+  error,
+  hasCoordinates,
+  targetLabel,
+  onRefresh,
+}) {
+  return (
+    <div className="px-5 py-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Restaurants
+          </h3>
+          {targetLabel ? (
+            <p className="mt-1 truncate text-xs text-zinc-500">
+              Near {targetLabel}
+            </p>
+          ) : null}
+        </div>
+
+        {hasCoordinates ? (
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-zinc-300 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`}
+              aria-hidden="true"
+            />
+            Refresh
+          </button>
+        ) : null}
+      </div>
+
+      {!hasCoordinates ? (
+        <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-4 text-sm text-zinc-300">
+          Select an arena or enable location to find nearby restaurants.
+        </div>
+      ) : null}
+
+      {hasCoordinates && isLoading ? (
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/10 p-4 text-sm text-cyan-100">
+            Finding restaurants near this arena...
+          </div>
+          {[0, 1, 2].map((item) => (
+            <div
+              key={item}
+              className="rounded-[24px] border border-white/8 bg-[#232834] p-4"
+            >
+              <div className="h-5 w-2/3 animate-pulse rounded bg-white/8" />
+              <div className="mt-3 flex gap-2">
+                <div className="h-6 w-20 animate-pulse rounded-full bg-white/8" />
+                <div className="h-6 w-24 animate-pulse rounded-full bg-white/8" />
+              </div>
+              <div className="mt-4 h-4 w-full animate-pulse rounded bg-white/8" />
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {hasCoordinates && !isLoading && error ? (
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
+          Could not load restaurants right now.
+        </div>
+      ) : null}
+
+      {hasCoordinates && !isLoading && !error && !restaurants.length ? (
+        <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-4 text-sm text-zinc-300">
+          No nearby restaurants found for this arena.
+        </div>
+      ) : null}
+
+      {hasCoordinates && !isLoading && !error && restaurants.length ? (
+        <div className="space-y-3">
+          {restaurants.map((restaurant) => {
+            const priceLevel = formatPriceLevel(restaurant.priceLevel);
+            const openStatus = getOpenStatus(restaurant.openNow);
+
+            return (
+              <article
+                key={restaurant.id}
+                className="rounded-[24px] border border-white/8 bg-[#232834] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.14)]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="truncate text-[15px] font-semibold text-white">
+                      {restaurant.name}
+                    </h4>
+                    <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-zinc-300">
+                      <span className="rounded-full border border-white/8 bg-white/5 px-2 py-1">
+                        {restaurant.rating != null
+                          ? `${restaurant.rating.toFixed(1)} rating`
+                          : "No rating yet"}
+                      </span>
+                      {restaurant.userRatingCount != null ? (
+                        <span className="rounded-full border border-white/8 bg-white/5 px-2 py-1">
+                          {restaurant.userRatingCount} reviews
+                        </span>
+                      ) : null}
+                      {priceLevel ? (
+                        <span className="rounded-full border border-white/8 bg-white/5 px-2 py-1">
+                          {priceLevel}
+                        </span>
+                      ) : null}
+                      <span
+                        className={`rounded-full border px-2 py-1 ${
+                          restaurant.openNow === true
+                            ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200"
+                            : restaurant.openNow === false
+                              ? "border-amber-300/20 bg-amber-300/10 text-amber-200"
+                              : "border-white/8 bg-white/5 text-zinc-300"
+                        }`}
+                      >
+                        {openStatus}
+                      </span>
+                      {restaurant.distanceMiles != null ? (
+                        <span className="rounded-full border border-white/8 bg-white/5 px-2 py-1">
+                          {restaurant.distanceMiles.toFixed(1)} mi
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                {restaurant.address ? (
+                  <p className="mt-3 text-sm leading-5 text-zinc-400">
+                    {restaurant.address}
+                  </p>
+                ) : null}
+
+                {restaurant.googleMapsUrl || restaurant.websiteUrl ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {restaurant.googleMapsUrl ? (
+                      <a
+                        href={restaurant.googleMapsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#0b9d43] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#10ad4b]"
+                      >
+                        Open in Maps
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                      </a>
+                    ) : null}
+                    {restaurant.websiteUrl ? (
+                      <a
+                        href={restaurant.websiteUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/8 hover:text-white"
+                      >
+                        Website
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export default function ArenaMap({ onSelectedTeamChange }) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -308,6 +509,12 @@ export default function ArenaMap() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("players");
   const [brokenImages, setBrokenImages] = useState({});
+  const [liveEventsByTeam, setLiveEventsByTeam] = useState({});
+  const [restaurants, setRestaurants] = useState([]);
+  const [restaurantsLoading, setRestaurantsLoading] = useState(false);
+  const [restaurantsError, setRestaurantsError] = useState("");
+  const [restaurantsLoaded, setRestaurantsLoaded] = useState(false);
+  const [restaurantsTargetKey, setRestaurantsTargetKey] = useState(null);
 
   const panelDetails = useMemo(
     () => (selectedTeam ? getPanelDetails(selectedTeam) : null),
@@ -316,6 +523,25 @@ export default function ArenaMap() {
 
   const arenaImageMissing =
     selectedTeam?.arenaImage && brokenImages[selectedTeam.arenaImage];
+  const selectedTeamEventsState = selectedTeam
+    ? liveEventsByTeam[selectedTeam.name] || EMPTY_LIVE_EVENTS_STATE
+    : EMPTY_LIVE_EVENTS_STATE;
+  const selectedArenaData =
+    selectedTeam && panelDetails
+      ? nbaArenas.find(
+          (arena) =>
+            arena.teamName === selectedTeam.name ||
+            arena.arenaName === panelDetails.arena
+        ) ?? null
+      : null;
+  const restaurantSearchTarget = selectedTeam
+    ? {
+        latitude: selectedArenaData?.latitude ?? selectedTeam.coordinates[1],
+        longitude: selectedArenaData?.longitude ?? selectedTeam.coordinates[0],
+        label: selectedArenaData?.arenaName ?? panelDetails?.arena,
+        key: `arena:${selectedTeam.name}`,
+      }
+    : null;
 
   useEffect(() => {
     if (mapRef.current || !mapContainer.current) return;
@@ -374,11 +600,21 @@ export default function ArenaMap() {
       `);
 
       markerEl.addEventListener("click", () => {
+        const details = getPanelDetails(team);
         setSelectedTeam(team);
         setPanelOpen(true);
         setActiveTab("players");
         setIsExpanded(false);
         setPanelWidth(420);
+        setRestaurants([]);
+        setRestaurantsLoading(false);
+        setRestaurantsError("");
+        setRestaurantsLoaded(false);
+        setRestaurantsTargetKey(null);
+        onSelectedTeamChange?.({
+          teamName: team.name,
+          arenaName: details.arena,
+        });
       });
 
       markerEl.addEventListener("mouseenter", () => {
@@ -396,7 +632,143 @@ export default function ArenaMap() {
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [onSelectedTeamChange]);
+
+  useEffect(() => {
+    const shouldLoadLiveEvents =
+      panelOpen &&
+      selectedTeam?.name &&
+      (activeTab === "games" || activeTab === "tickets");
+
+    if (!shouldLoadLiveEvents) {
+      return;
+    }
+
+    const teamName = selectedTeam.name;
+    const existingState = liveEventsByTeam[teamName];
+
+    if (!existingState?.loading || existingState?.loaded) {
+      return;
+    }
+
+    let cancelled = false;
+
+    fetch(`/api/ticketmaster/team?team=${encodeURIComponent(teamName)}`)
+      .then(async (response) => {
+        const data = await response.json();
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!response.ok) {
+          setLiveEventsByTeam((current) => ({
+            ...current,
+            [teamName]: {
+              events: [],
+              loading: false,
+              loaded: true,
+              error:
+                data.error || "Could not load live Ticketmaster games right now.",
+            },
+          }));
+          return;
+        }
+
+        setLiveEventsByTeam((current) => ({
+          ...current,
+          [teamName]: {
+            events: data.events || [],
+            loading: false,
+            loaded: true,
+            error: null,
+          },
+        }));
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+
+        setLiveEventsByTeam((current) => ({
+          ...current,
+          [teamName]: {
+            events: [],
+            loading: false,
+            loaded: true,
+            error: "Could not load live Ticketmaster games right now.",
+          },
+        }));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, liveEventsByTeam, panelOpen, selectedTeam?.name]);
+
+  useEffect(() => {
+    const shouldLoadRestaurants =
+      panelOpen &&
+      activeTab === "restaurants" &&
+      restaurantsLoading &&
+      restaurantSearchTarget?.latitude != null &&
+      restaurantSearchTarget.longitude != null;
+
+    if (!shouldLoadRestaurants) {
+      return;
+    }
+
+    if (
+      restaurantsLoaded &&
+      restaurantsTargetKey === restaurantSearchTarget.key
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    fetchNearbyRestaurants({
+      latitude: restaurantSearchTarget.latitude,
+      longitude: restaurantSearchTarget.longitude,
+    })
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+
+        setRestaurants(result.restaurants);
+        setRestaurantsLoaded(true);
+        setRestaurantsTargetKey(restaurantSearchTarget.key);
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+
+        setRestaurants([]);
+        setRestaurantsLoaded(true);
+        setRestaurantsTargetKey(restaurantSearchTarget.key);
+        setRestaurantsError("Could not load restaurants right now.");
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setRestaurantsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeTab,
+    panelOpen,
+    restaurantSearchTarget?.key,
+    restaurantSearchTarget?.latitude,
+    restaurantSearchTarget?.longitude,
+    restaurantsLoaded,
+    restaurantsLoading,
+    restaurantsTargetKey,
+  ]);
 
   useEffect(() => {
     const handleMouseMove = (event) => {
@@ -439,6 +811,46 @@ export default function ArenaMap() {
     setPanelWidth(nextExpanded ? 560 : 420);
   };
 
+  const handleRefreshRestaurants = () => {
+    setRestaurantsLoaded(false);
+    setRestaurantsTargetKey(null);
+    setRestaurantsError("");
+    setRestaurantsLoading(Boolean(restaurantSearchTarget));
+  };
+
+  const handleTabSelect = (tabId) => {
+    setActiveTab(tabId);
+
+    if (
+      tabId === "restaurants" &&
+      restaurantSearchTarget &&
+      !restaurantsLoading &&
+      (!restaurantsLoaded || restaurantsTargetKey !== restaurantSearchTarget.key)
+    ) {
+      setRestaurants([]);
+      setRestaurantsError("");
+      setRestaurantsLoading(true);
+    }
+
+    if (
+      !selectedTeam?.name ||
+      (tabId !== "games" && tabId !== "tickets") ||
+      liveEventsByTeam[selectedTeam.name]
+    ) {
+      return;
+    }
+
+    setLiveEventsByTeam((current) => ({
+      ...current,
+      [selectedTeam.name]: {
+        events: [],
+        loading: true,
+        loaded: false,
+        error: null,
+      },
+    }));
+  };
+
   const renderPanelContent = () => {
     if (!selectedTeam || !panelDetails) return null;
 
@@ -468,39 +880,44 @@ export default function ArenaMap() {
 
     if (activeTab === "games") {
       return (
-        <section className="px-1 pt-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-            Games
-          </p>
-          <p className="mt-4 text-sm text-zinc-400">
-            Upcoming home games can live here once you add schedule data.
-          </p>
-        </section>
+        <TicketmasterEventsTab
+          title="Upcoming Games"
+          emptyMessage="No upcoming Ticketmaster events found for this team."
+          events={selectedTeamEventsState.events}
+          isLoading={selectedTeamEventsState.loading}
+          error={selectedTeamEventsState.error}
+          selectedTeamName={selectedTeam.name}
+          selectedArenaName={panelDetails.arena}
+          buttonLabel="Details"
+        />
       );
     }
 
     if (activeTab === "tickets") {
       return (
-        <section className="px-1 pt-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-            Tickets
-          </p>
-          <p className="mt-4 text-sm text-zinc-400">
-            Ticket links and pricing modules can slot into this section.
-          </p>
-        </section>
+        <TicketmasterEventsTab
+          title="Ticketmaster Tickets"
+          emptyMessage="No upcoming Ticketmaster ticketed events found for this team."
+          events={selectedTeamEventsState.events}
+          isLoading={selectedTeamEventsState.loading}
+          error={selectedTeamEventsState.error}
+          selectedTeamName={selectedTeam.name}
+          selectedArenaName={panelDetails.arena}
+          buttonLabel="View Tickets"
+          showPrice
+        />
       );
     }
 
     return (
-      <section className="px-1 pt-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-          Food Nearby
-        </p>
-        <p className="mt-4 text-sm text-zinc-400">
-          Restaurant recommendations can appear here once that data is wired in.
-        </p>
-      </section>
+      <RestaurantsTab
+        restaurants={restaurants}
+        isLoading={restaurantsLoading}
+        error={restaurantsError}
+        hasCoordinates={Boolean(restaurantSearchTarget)}
+        targetLabel={restaurantSearchTarget?.label}
+        onRefresh={handleRefreshRestaurants}
+      />
     );
   };
 
@@ -564,12 +981,15 @@ export default function ArenaMap() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h3 className="text-base font-bold text-white">
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">
+                        Home Arena
+                      </p>
+                      <h3 className="text-sm font-semibold text-white sm:text-base">
                         {panelDetails.arena}
                       </h3>
                       <div className="mt-1 flex items-center gap-1.5">
                         <MapPin className="h-3.5 w-3.5 text-white/70" />
-                        <span className="text-xs font-medium text-white/70">
+                        <span className="text-[11px] font-medium text-white/70 sm:text-xs">
                           {panelDetails.location}
                         </span>
                       </div>
@@ -591,14 +1011,14 @@ export default function ArenaMap() {
                       <button
                         key={tab.id}
                         type="button"
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`inline-flex h-14 min-w-0 items-center justify-center gap-2 rounded-full px-3 text-xs font-semibold transition sm:text-sm ${
+                        onClick={() => handleTabSelect(tab.id)}
+                        className={`inline-flex h-12 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-[11px] font-semibold transition sm:px-3 sm:text-xs ${
                           activeTab === tab.id
                             ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/25"
                             : "text-zinc-400 hover:bg-white/6 hover:text-white"
                         }`}
                       >
-                        <Icon className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden="true" />
+                        <Icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden="true" />
                         <span className="truncate">{tab.label}</span>
                       </button>
                     );

@@ -11,6 +11,8 @@ export type Game = {
   ticketUrl: string;
 };
 
+// Demo fallback data only. Upcoming games in the side panel and Silver AI
+// should prefer live Ticketmaster events when that integration is available.
 const awayOffsets = [7, 13];
 const timeSlots = [
   "7:00 PM",

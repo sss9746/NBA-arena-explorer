@@ -36,7 +36,7 @@ export default function ArenaDetailsTab({ team }) {
 
   return (
     <div className="dark space-y-4 px-5 py-4">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         Arena Information
       </h3>
 
@@ -55,10 +55,10 @@ export default function ArenaDetailsTab({ team }) {
               <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-background">
                 <Icon className={`h-[18px] w-[18px] ${stat.color}`} />
               </div>
-              <p className="text-xs font-medium text-muted-foreground">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 {stat.label}
               </p>
-              <p className="mt-0.5 text-sm font-bold text-foreground">
+              <p className="mt-1 text-[13px] font-semibold text-foreground sm:text-sm">
                 {stat.value}
               </p>
             </motion.div>

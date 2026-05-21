@@ -20,7 +20,7 @@ export default function PlayersTab({ players = [] }) {
 
   return (
     <div className="dark space-y-1 px-5 py-4">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         Roster
       </h3>
 
@@ -58,10 +58,10 @@ export default function PlayersTab({ players = [] }) {
               </div>
 
               <div className="min-w-0 flex-1 text-left">
-                <p className="truncate text-sm font-semibold text-foreground">
+                <p className="truncate text-[13px] font-semibold text-foreground sm:text-sm">
                   {player.name}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground sm:text-xs">
                   #{number} · {position}
                 </p>
               </div>

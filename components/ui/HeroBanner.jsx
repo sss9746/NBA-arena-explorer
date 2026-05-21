@@ -21,10 +21,17 @@ export default function HeroBanner({ team, onImageError }) {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-4">
-        <h3 className="text-base font-bold text-white">{team.arena}</h3>
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">
+          Home Arena
+        </p>
+        <h3 className="text-sm font-semibold text-white sm:text-base">
+          {team.arena}
+        </h3>
         <div className="mt-1 flex items-center gap-1.5">
           <MapPin className="h-3.5 w-3.5 text-white/70" />
-          <span className="text-xs font-medium text-white/70">{team.city}</span>
+          <span className="text-[11px] font-medium text-white/70 sm:text-xs">
+            {team.city}
+          </span>
         </div>
       </div>
       <div
