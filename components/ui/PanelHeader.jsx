@@ -19,7 +19,7 @@ export default function PanelHeader({
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl p-2"
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg p-2"
           style={{ background: `${team.color}20` }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -60,7 +60,9 @@ export default function PanelHeader({
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsFavorite(!isFavorite)}
-            className="rounded-xl p-2 transition-colors hover:bg-secondary"
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            className="rounded-md p-2 transition-colors hover:bg-secondary"
             type="button"
           >
             <Star
@@ -76,7 +78,9 @@ export default function PanelHeader({
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={onToggleExpand}
-            className="hidden rounded-xl p-2 transition-colors hover:bg-secondary md:flex"
+            aria-label={isExpanded ? "Collapse side panel" : "Expand side panel"}
+            title={isExpanded ? "Collapse side panel" : "Expand side panel"}
+            className="hidden rounded-md p-2 transition-colors hover:bg-secondary md:flex"
             type="button"
           >
             {isExpanded ? (
@@ -90,7 +94,9 @@ export default function PanelHeader({
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
-            className="rounded-xl p-2 transition-colors hover:bg-secondary"
+            aria-label="Close arena details"
+            title="Close arena details"
+            className="rounded-md p-2 transition-colors hover:bg-secondary"
             type="button"
           >
             <X className="h-4 w-4 text-muted-foreground" />

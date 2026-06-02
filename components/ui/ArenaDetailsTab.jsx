@@ -35,7 +35,7 @@ export default function ArenaDetailsTab({ team }) {
   ];
 
   return (
-    <div className="dark space-y-4 px-5 py-4">
+    <div className="dark space-y-4 py-4">
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         Arena Information
       </h3>
@@ -50,9 +50,9 @@ export default function ArenaDetailsTab({ team }) {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.08 }}
-              className="rounded-2xl border border-border/50 bg-secondary/60 p-4 backdrop-blur-sm transition-colors hover:border-primary/30"
+              className="rounded-lg border border-border/50 bg-secondary/60 p-4 backdrop-blur-sm transition-colors hover:border-primary/30"
             >
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-background">
+              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-background">
                 <Icon className={`h-[18px] w-[18px] ${stat.color}`} />
               </div>
               <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
@@ -70,7 +70,7 @@ export default function ArenaDetailsTab({ team }) {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
-        className="aspect-video overflow-hidden rounded-2xl border border-border/50 bg-secondary/40"
+        className="aspect-video overflow-hidden rounded-lg border border-border/50 bg-secondary/40"
       >
         {mapFailed ? (
           <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">

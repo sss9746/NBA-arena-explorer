@@ -18,6 +18,18 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { arenas } from "@/data";
 import {
+  getRoadTripLengthDays,
+  getRequestedTripStartDate,
+  hasUnresolvedTypedStartCity,
+  isRoadTripRequest,
+  resolveRoadTripStartLocation,
+  shouldRequestBrowserLocationForRoadTrip,
+} from "@/src/lib/locationResolver";
+import {
+  generateRoadTripItinerary,
+  type RoadTripItinerary,
+} from "@/src/lib/roadTripPlanner";
+import {
   fetchNearbyNBAGames,
   type NearbyGamesSource,
   type NearbyNBAGame,
@@ -44,6 +56,8 @@ type SilverChatPanelProps = {
   onClose: () => void;
   selectedTeamName: string | null;
   selectedArenaName: string | null;
+  activeRoadTrip: RoadTripItinerary | null;
+  onRoadTripGenerated: (roadTrip: RoadTripItinerary) => void;
 };
 
 const SUGGESTIONS = [
@@ -93,6 +107,8 @@ export default function SilverChatPanel({
   onClose,
   selectedTeamName,
   selectedArenaName,
+  activeRoadTrip,
+  onRoadTripGenerated,
 }: SilverChatPanelProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([STARTER_MESSAGE]);
@@ -337,6 +353,82 @@ export default function SilverChatPanel({
     }
   };
 
+  const addAssistantMessage = (content: string) => {
+    messageIdRef.current += 1;
+    const assistantId = messageIdRef.current;
+
+    setMessages((current) => [
+      ...current,
+      {
+        id: `assistant-${assistantId}`,
+        role: "assistant",
+        content,
+      },
+    ]);
+  };
+
+  const generateRoadTrip = async (message: string) => {
+    let startLocation = resolveRoadTripStartLocation(message, userLocation);
+
+    if (
+      !startLocation &&
+      shouldRequestBrowserLocationForRoadTrip(message)
+    ) {
+      const resolvedLocation = await getUserLocation();
+      startLocation = resolveRoadTripStartLocation(message, resolvedLocation);
+    }
+
+    if (!startLocation) {
+      return hasUnresolvedTypedStartCity(message)
+        ? "I could not resolve that starting city. Try a nearby NBA city, or allow location access and ask for a trip near me."
+        : "I could not access your location. Try typing a starting city, like “Plan a 3-day NBA trip from Dallas.”";
+    }
+
+    const warnings: string[] = [];
+    let games: NearbyNBAGame[] = [];
+    setIsNearbyGamesLoading(true);
+    setNearbyGamesError(null);
+
+    try {
+      const nearbyGamesResult = await fetchNearbyNBAGames(
+        {
+          latitude: startLocation.coordinates.lat,
+          longitude: startLocation.coordinates.lng,
+          accuracy: 0,
+        },
+        500
+      );
+      games = nearbyGamesResult.games;
+      setNearbyGamesCount(games.length);
+      setNearbyGamesSource(nearbyGamesResult.source);
+    } catch {
+      setNearbyGamesCount(null);
+      setNearbyGamesSource(null);
+      setNearbyGamesError("Live nearby games could not be loaded.");
+      warnings.push(
+        "Live Ticketmaster games could not be loaded, so this itinerary uses arena visits."
+      );
+    } finally {
+      setIsNearbyGamesLoading(false);
+    }
+
+    const roadTrip = await generateRoadTripItinerary({
+      startLocation,
+      tripLengthDays: getRoadTripLengthDays(message),
+      tripStartDate: getRequestedTripStartDate(message),
+      games,
+      arenas,
+      warnings,
+      loadRestaurants: async (location) => {
+        const result = await fetchNearbyRestaurants(location);
+        return result.restaurants;
+      },
+    });
+
+    onRoadTripGenerated(roadTrip);
+    return roadTrip.message;
+  };
+
   const sendMessage = async (rawMessage: string) => {
     const message = rawMessage.trim();
 
@@ -359,6 +451,11 @@ export default function SilverChatPanel({
     setIsLoading(true);
 
     try {
+      if (isRoadTripRequest(message)) {
+        addAssistantMessage(await generateRoadTrip(message));
+        return;
+      }
+
       const {
         nearbyGames,
         nearbyGamesError: liveNearbyGamesError,
@@ -402,39 +499,19 @@ export default function SilverChatPanel({
             selectedGame,
             nearbyRestaurants: liveNearbyRestaurants,
             nearbyRestaurantsError: liveNearbyRestaurantsError,
+            activeRoadTrip,
           },
         }),
       });
 
       const data = (await response.json()) as SilverApiResponse;
-
-      messageIdRef.current += 1;
-      const assistantId = messageIdRef.current;
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: `assistant-${assistantId}`,
-          role: "assistant",
-          content:
-            data.reply ||
-            data.error ||
-            "Silver AI could not generate a response.",
-        },
-      ]);
+      addAssistantMessage(
+        data.reply || data.error || "Silver AI could not generate a response."
+      );
     } catch {
-      messageIdRef.current += 1;
-      const assistantId = messageIdRef.current;
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: `assistant-${assistantId}`,
-          role: "assistant",
-          content:
-            "Silver AI could not reach the server. Check your connection and try again.",
-        },
-      ]);
+      addAssistantMessage(
+        "Silver AI could not reach the server. Check your connection and try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -467,7 +544,7 @@ export default function SilverChatPanel({
 
           <motion.section
             aria-label="Silver AI chat panel"
-            className="fixed inset-x-0 bottom-0 z-[85] mx-auto flex h-[66vh] max-h-[760px] w-full max-w-6xl flex-col overflow-hidden rounded-t-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,12,20,0.98)_0%,rgba(6,10,18,0.98)_100%)] shadow-[0_-32px_120px_rgba(0,0,0,0.6)]"
+            className="fixed inset-x-0 bottom-0 z-[85] mx-auto flex h-[72vh] max-h-[760px] w-full max-w-6xl flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(9,12,20,0.98)_0%,rgba(6,10,18,0.98)_100%)] shadow-[0_-32px_120px_rgba(0,0,0,0.6)] sm:h-[66vh] sm:rounded-t-[28px]"
             initial={{ y: "100%", opacity: 0.9 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0.9 }}
@@ -479,7 +556,7 @@ export default function SilverChatPanel({
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 shadow-[0_0_30px_rgba(34,211,238,0.18)]">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10 shadow-[0_0_30px_rgba(34,211,238,0.18)]">
                       <Bot className="h-5 w-5 text-cyan-300" aria-hidden="true" />
                     </div>
 
@@ -505,7 +582,7 @@ export default function SilverChatPanel({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="shrink-0 rounded-xl border border-white/8 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white"
+                  className="shrink-0 rounded-md border border-white/8 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white"
                   onClick={onClose}
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
@@ -515,7 +592,7 @@ export default function SilverChatPanel({
 
             <div
               ref={scrollRef}
-              className="flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6"
+              className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5"
             >
               <div className="flex flex-wrap gap-2">
                 <button
@@ -610,7 +687,7 @@ export default function SilverChatPanel({
               ) : null}
 
               {nearbyRestaurants.length ? (
-                <section className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
+                <section className="rounded-lg border border-white/8 bg-white/[0.035] p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <Utensils
@@ -637,7 +714,7 @@ export default function SilverChatPanel({
                       return (
                         <article
                           key={restaurant.id}
-                          className="rounded-xl border border-white/8 bg-black/20 p-3"
+                          className="rounded-lg border border-white/8 bg-black/20 p-3"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
@@ -712,7 +789,7 @@ export default function SilverChatPanel({
                   >
                     <div
                       className={cn(
-                        "max-w-[88%] rounded-2xl border px-4 py-3 text-sm leading-6 shadow-lg sm:max-w-[75%]",
+                        "max-w-[92%] rounded-lg border px-4 py-3 text-sm leading-6 shadow-lg sm:max-w-[75%]",
                         message.role === "user"
                           ? "border-cyan-400/20 bg-[linear-gradient(135deg,rgba(34,211,238,0.18)_0%,rgba(59,130,246,0.2)_100%)] text-white shadow-cyan-900/20"
                           : "border-white/8 bg-white/[0.04] text-zinc-100 shadow-black/20"
@@ -735,7 +812,7 @@ export default function SilverChatPanel({
 
                 {isLoading ? (
                   <div className="flex justify-start">
-                    <div className="max-w-[88%] rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-sm leading-6 text-zinc-100 shadow-lg shadow-black/20 sm:max-w-[75%]">
+                    <div className="max-w-[92%] rounded-lg border border-white/8 bg-white/[0.04] px-4 py-3 text-sm leading-6 text-zinc-100 shadow-lg shadow-black/20 sm:max-w-[75%]">
                       <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-300/85">
                         <Bot className="h-3.5 w-3.5" aria-hidden="true" />
                         Silver
@@ -751,8 +828,8 @@ export default function SilverChatPanel({
               </div>
             </div>
 
-            <div className="border-t border-white/8 bg-black/15 px-5 pb-5 pt-4 sm:px-6">
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-2 shadow-inner shadow-black/10">
+            <div className="border-t border-white/8 bg-black/15 px-4 pb-4 pt-3 sm:px-6 sm:pb-5 sm:pt-4">
+              <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] p-2 shadow-inner shadow-black/10 sm:gap-3">
                 <Input
                   ref={inputRef}
                   value={input}
@@ -760,7 +837,7 @@ export default function SilverChatPanel({
                   onKeyDown={handleKeyDown}
                   placeholder="Ask Silver about NBA trips, arenas, games…"
                   disabled={isLoading}
-                  className="h-12 flex-1 rounded-xl border-0 bg-transparent px-3 text-white placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="h-11 flex-1 rounded-md border-0 bg-transparent px-2 text-white placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 sm:h-12 sm:px-3"
                 />
 
                 <Button
@@ -769,7 +846,7 @@ export default function SilverChatPanel({
                     void handleSubmit();
                   }}
                   disabled={!input.trim() || isLoading}
-                  className="h-12 rounded-xl bg-[linear-gradient(135deg,#8b5cf6_0%,#2563eb_50%,#06b6d4_100%)] px-4 text-white shadow-[0_10px_30px_rgba(37,99,235,0.28)] hover:opacity-95"
+                  className="h-11 rounded-md bg-[linear-gradient(135deg,#8b5cf6_0%,#2563eb_50%,#06b6d4_100%)] px-3 text-white shadow-[0_10px_30px_rgba(37,99,235,0.28)] hover:opacity-95 sm:h-12 sm:px-4"
                 >
                   <Send className="h-4 w-4" aria-hidden="true" />
                   <span className="hidden sm:inline">

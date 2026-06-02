@@ -184,7 +184,7 @@ export default function TicketmasterEventsTab({
 }: TicketmasterEventsTabProps) {
   if (isLoading) {
     return (
-      <div className="px-5 py-4">
+      <div className="py-4">
         <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {title}
         </h3>
@@ -192,10 +192,10 @@ export default function TicketmasterEventsTab({
           {[0, 1].map((item) => (
             <div
               key={item}
-              className="rounded-[28px] border border-white/8 bg-[#232834] p-5"
+              className="rounded-lg border border-white/8 bg-[#202631] p-4"
             >
               <div className="flex items-start gap-4">
-                <div className="h-16 w-16 animate-pulse rounded-2xl bg-white/8" />
+                <div className="h-14 w-14 animate-pulse rounded-lg bg-white/8" />
                 <div className="min-w-0 flex-1 space-y-3">
                   <div className="h-5 w-2/3 animate-pulse rounded bg-white/8" />
                   <div className="h-4 w-24 animate-pulse rounded bg-white/8" />
@@ -204,7 +204,7 @@ export default function TicketmasterEventsTab({
                     <div className="h-4 w-24 animate-pulse rounded bg-white/8" />
                   </div>
                 </div>
-                <div className="h-11 w-28 animate-pulse rounded-2xl bg-emerald-500/20" />
+                <div className="h-10 w-24 animate-pulse rounded-md bg-emerald-500/20" />
               </div>
             </div>
           ))}
@@ -215,12 +215,12 @@ export default function TicketmasterEventsTab({
 
   if (error) {
     return (
-      <div className="px-5 py-4">
+      <div className="py-4">
         <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {title}
         </h3>
-        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
-          {error}
+        <div className="rounded-lg border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
+          Could not load upcoming games right now.
         </div>
       </div>
     );
@@ -228,11 +228,11 @@ export default function TicketmasterEventsTab({
 
   if (!events.length) {
     return (
-      <div className="px-5 py-4">
+      <div className="py-4">
         <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {title}
         </h3>
-        <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-4 text-sm text-zinc-300">
+        <div className="rounded-lg border border-white/8 bg-white/[0.04] p-4 text-sm text-zinc-300">
           {emptyMessage}
         </div>
       </div>
@@ -240,7 +240,7 @@ export default function TicketmasterEventsTab({
   }
 
   return (
-    <div className="px-5 py-4">
+    <div className="py-4">
       <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {title}
       </h3>
@@ -256,10 +256,10 @@ export default function TicketmasterEventsTab({
           return (
             <article
               key={event.id}
-              className="rounded-[28px] border border-white/8 bg-[#232834] px-5 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.18)]"
+              className="rounded-lg border border-white/8 bg-[#202631] p-4 shadow-[0_14px_28px_rgba(0,0,0,0.14)] transition hover:border-white/15"
             >
               <div className="flex items-start gap-4">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#171c25] ring-1 ring-white/6">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#171c25] ring-1 ring-white/6">
                   {matchup.displayLogo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -275,7 +275,7 @@ export default function TicketmasterEventsTab({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <h4 className="truncate text-[15px] font-semibold text-white sm:text-[16px]">
+                      <h4 className="break-words text-[15px] font-semibold leading-5 text-white sm:text-[16px]">
                         {matchup.matchupLabel}
                       </h4>
                       <div className="mt-1 flex items-center gap-2 text-sm text-zinc-400">
@@ -291,7 +291,7 @@ export default function TicketmasterEventsTab({
                     ) : null}
                   </div>
 
-                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-400">
                       <div className="flex items-center gap-2">
                         <CalendarDays className="h-4 w-4 shrink-0" />
@@ -306,7 +306,7 @@ export default function TicketmasterEventsTab({
                     {event.ticketUrl ? (
                       <Button
                         asChild
-                        className="h-11 rounded-2xl bg-[#0b9d43] px-5 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(11,157,67,0.22)] hover:bg-[#10ad4b]"
+                        className="h-10 rounded-md bg-[#0b9d43] px-4 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(11,157,67,0.18)] hover:bg-[#10ad4b]"
                       >
                         <a href={event.ticketUrl} target="_blank" rel="noreferrer">
                           <span>{buttonLabel}</span>
@@ -318,14 +318,12 @@ export default function TicketmasterEventsTab({
                     )}
                   </div>
 
-                  {showPrice ? (
-                    <div className="mt-3 text-xs text-zinc-500">
-                      {event.venueName || "Venue not listed"}
-                      {event.city || event.state
-                        ? ` • ${[event.city, event.state].filter(Boolean).join(", ")}`
-                        : ""}
-                    </div>
-                  ) : null}
+                  <div className="mt-3 text-xs leading-5 text-zinc-500">
+                    {event.venueName || "Venue not listed"}
+                    {event.city || event.state
+                      ? ` • ${[event.city, event.state].filter(Boolean).join(", ")}`
+                      : ""}
+                  </div>
                 </div>
               </div>
             </article>

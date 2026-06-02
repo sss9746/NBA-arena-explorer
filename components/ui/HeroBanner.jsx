@@ -10,7 +10,7 @@ export default function HeroBanner({ team, onImageError }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="relative mx-5 aspect-video overflow-hidden rounded-2xl sm:mx-6"
+      className="relative mx-5 aspect-video overflow-hidden rounded-lg sm:mx-6"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

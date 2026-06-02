@@ -9,6 +9,7 @@ import {
 import type { NearbyNBAGame } from "@/src/lib/ticketmaster";
 import type { NearbyGamesSource } from "@/src/lib/ticketmaster";
 import type { NearbyRestaurant } from "@/src/lib/restaurants";
+import type { RoadTripItinerary } from "@/src/lib/roadTripPlanner";
 
 type SilverRequestBody = {
   message?: string;
@@ -38,6 +39,7 @@ type SilverRequestBody = {
     selectedGame?: NearbyNBAGame | null;
     nearbyRestaurants?: NearbyRestaurant[];
     nearbyRestaurantsError?: string | null;
+    activeRoadTrip?: RoadTripItinerary | null;
   } | null;
 };
 
@@ -263,6 +265,7 @@ Rules:
 - When nearbyGames are provided, use them as the source of truth for real upcoming games.
 - If fallbackUsed is true, still treat returned events as live Ticketmaster data, but avoid overstating certainty. You may say, "I found these nearby NBA-related games from Ticketmaster."
 - When nearbyRestaurants are provided, use them as the source of truth for restaurant recommendations.
+- When an active road trip is provided, use its stops as the source of truth for follow-up trip questions.
 - Do not invent restaurants, ratings, addresses, prices, open status, or links.
 - When planning a trip, recommend 2 to 4 restaurants near the arena.
 - Prioritize restaurants that are open, highly rated, close to the arena, and have enough user ratings.
@@ -370,6 +373,20 @@ function buildAppContext(body: SilverRequestBody) {
           ? `${game.latitude}, ${game.longitude}`
           : "not listed"
       }`
+    );
+  }
+
+  if (body.context?.activeRoadTrip) {
+    const roadTrip = body.context.activeRoadTrip;
+    contextParts.push(
+      [
+        `Active road trip: ${roadTrip.title}`,
+        `Start: ${roadTrip.startLocation.label}`,
+        ...roadTrip.stops.map(
+          (stop) =>
+            `Day ${stop.day}: ${stop.city}, ${stop.state} | ${stop.arenaName} | ${stop.teamName} | ${stop.gameTitle || "Arena exploration day"} | Food: ${stop.restaurantName}`
+        ),
+      ].join("\n")
     );
   }
 

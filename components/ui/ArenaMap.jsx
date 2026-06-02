@@ -8,7 +8,6 @@ import {
   MapPin,
   RefreshCw,
   Ticket,
-  Users,
   UtensilsCrossed,
 } from "lucide-react";
 import mapboxgl from "mapbox-gl";
@@ -16,7 +15,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import ArenaDetailsTab from "@/components/ui/ArenaDetailsTab";
 import HeroBanner from "@/components/ui/HeroBanner";
 import PanelHeader from "@/components/ui/PanelHeader";
-import PlayersTab from "@/components/ui/PlayersTab";
+import RoadTripPanel from "@/components/ui/RoadTripPanel";
 import TicketmasterEventsTab from "@/components/ui/TicketmasterEventsTab";
 import { arenas as nbaArenas } from "@/data";
 import { fetchNearbyRestaurants } from "@/src/lib/restaurants";
@@ -245,7 +244,6 @@ const TEAM_DETAILS = {
 };
 
 const PANEL_TABS = [
-  { id: "players", label: "Players", icon: Users },
   { id: "arena", label: "Arena", icon: Landmark },
   { id: "games", label: "Games", icon: CalendarDays },
   { id: "tickets", label: "Tickets", icon: Ticket },
@@ -253,36 +251,36 @@ const PANEL_TABS = [
 ];
 
 const teams = [
-  { name: "Golden State Warriors", coordinates: [-122.3877, 37.768], logo: "/logos/warriors.png", arenaImage: "/arenas/warriors-arena.jpg", players: [{ name: "Stephen Curry", image: "/players/curry.jpeg" }, { name: "Warriors Player 2", image: "/players/warriors-player-2.jpg" }] },
-  { name: "Los Angeles Lakers", coordinates: [-118.2673, 34.043], logo: "/logos/lakers.png", arenaImage: "/arenas/lakers-arena.jpg", players: [{ name: "Lakers Player 1", image: "/players/lakers-player-1.jpg" }, { name: "Lakers Player 2", image: "/players/lakers-player-2.jpg" }] },
-  { name: "Los Angeles Clippers", coordinates: [-118.3431, 33.945], logo: "/logos/clippers.png", arenaImage: "/arenas/clippers-arena.jpg", players: [{ name: "Clippers Player 1", image: "/players/clippers-player-1.jpg" }, { name: "Clippers Player 2", image: "/players/clippers-player-2.jpg" }] },
-  { name: "Phoenix Suns", coordinates: [-112.0712, 33.4457], logo: "/logos/suns.png", arenaImage: "/arenas/suns-arena.jpg", players: [{ name: "Suns Player 1", image: "/players/suns-player-1.jpg" }, { name: "Suns Player 2", image: "/players/suns-player-2.jpg" }] },
-  { name: "Sacramento Kings", coordinates: [-121.4994, 38.5802], logo: "/logos/kings.png", arenaImage: "/arenas/kings-arena.jpg", players: [{ name: "Kings Player 1", image: "/players/kings-player-1.jpg" }, { name: "Kings Player 2", image: "/players/kings-player-2.jpg" }] },
-  { name: "Portland Trail Blazers", coordinates: [-122.6668, 45.5316], logo: "/logos/blazzers.png", arenaImage: "/arenas/blazers-arena.jpg", players: [{ name: "Blazers Player 1", image: "/players/blazers-player-1.jpg" }, { name: "Blazers Player 2", image: "/players/blazers-player-2.jpg" }] },
-  { name: "Utah Jazz", coordinates: [-111.9011, 40.7683], logo: "/logos/jazz.png", arenaImage: "/arenas/jazz-arena.jpg", players: [{ name: "Jazz Player 1", image: "/players/jazz-player-1.jpg" }, { name: "Jazz Player 2", image: "/players/jazz-player-2.jpg" }] },
-  { name: "Denver Nuggets", coordinates: [-105.0077, 39.7487], logo: "/logos/nuggets.png", arenaImage: "/arenas/nuggets-arena.jpg", players: [{ name: "Nuggets Player 1", image: "/players/nuggets-player-1.jpg" }, { name: "Nuggets Player 2", image: "/players/nuggets-player-2.jpg" }] },
-  { name: "Oklahoma City Thunder", coordinates: [-97.5151, 35.4634], logo: "/logos/thunder.png", arenaImage: "/arenas/thunder-arena.jpg", players: [{ name: "Thunder Player 1", image: "/players/thunder-player-1.jpg" }, { name: "Thunder Player 2", image: "/players/thunder-player-2.jpg" }] },
-  { name: "Minnesota Timberwolves", coordinates: [-93.276, 44.9795], logo: "/logos/timberwolves.png", arenaImage: "/arenas/timberwolves-arena.jpg", players: [{ name: "Timberwolves Player 1", image: "/players/timberwolves-player-1.jpg" }, { name: "Timberwolves Player 2", image: "/players/timberwolves-player-2.jpg" }] },
-  { name: "Dallas Mavericks", coordinates: [-96.8103, 32.7905], logo: "/logos/mavericks.png", arenaImage: "/arenas/mavericks-arena.jpg", players: [{ name: "Mavericks Player 1", image: "/players/mavericks-player-1.jpg" }, { name: "Mavericks Player 2", image: "/players/mavericks-player-2.jpg" }] },
-  { name: "Houston Rockets", coordinates: [-95.3621, 29.7508], logo: "/logos/rockets.png", arenaImage: "/arenas/rockets-arena.jpg", players: [{ name: "Rockets Player 1", image: "/players/rockets-player-1.jpg" }, { name: "Rockets Player 2", image: "/players/rockets-player-2.jpg" }] },
-  { name: "San Antonio Spurs", coordinates: [-98.4375, 29.427], logo: "/logos/spurs.png", arenaImage: "/arenas/spurs-arena.jpg", players: [{ name: "Spurs Player 1", image: "/players/spurs-player-1.jpg" }, { name: "Spurs Player 2", image: "/players/spurs-player-2.jpg" }] },
-  { name: "New Orleans Pelicans", coordinates: [-90.0815, 29.949], logo: "/logos/pelicans.png", arenaImage: "/arenas/pelicans-arena.jpg", players: [{ name: "Pelicans Player 1", image: "/players/pelicans-player-1.jpg" }, { name: "Pelicans Player 2", image: "/players/pelicans-player-2.jpg" }] },
-  { name: "Memphis Grizzlies", coordinates: [-90.0505, 35.1382], logo: "/logos/grizzlies.png", arenaImage: "/arenas/grizzlies-arena.jpg", players: [{ name: "Grizzlies Player 1", image: "/players/grizzlies-player-1.jpg" }, { name: "Grizzlies Player 2", image: "/players/grizzlies-player-2.jpg" }] },
-  { name: "Boston Celtics", coordinates: [-71.0622, 42.3662], logo: "/logos/celtics.png", arenaImage: "/arenas/celtics-arena.jpg", players: [{ name: "Celtics Player 1", image: "/players/celtics-player-1.jpg" }, { name: "Celtics Player 2", image: "/players/celtics-player-2.jpg" }] },
-  { name: "Brooklyn Nets", coordinates: [-73.9754, 40.6826], logo: "/logos/nets.png", arenaImage: "/arenas/nets-arena.jpg", players: [{ name: "Nets Player 1", image: "/players/nets-player-1.jpg" }, { name: "Nets Player 2", image: "/players/nets-player-2.jpg" }] },
-  { name: "New York Knicks", coordinates: [-73.9934, 40.7505], logo: "/logos/knicks.png", arenaImage: "/arenas/knicks-arena.jpg", players: [{ name: "Knicks Player 1", image: "/players/knicks-player-1.jpg" }, { name: "Knicks Player 2", image: "/players/knicks-player-2.jpg" }] },
-  { name: "Philadelphia 76ers", coordinates: [-75.1719, 39.9012], logo: "/logos/sixers.png", arenaImage: "/arenas/sixers-arena.jpg", players: [{ name: "76ers Player 1", image: "/players/sixers-player-1.jpg" }, { name: "76ers Player 2", image: "/players/sixers-player-2.jpg" }] },
-  { name: "Toronto Raptors", coordinates: [-79.3791, 43.6435], logo: "/logos/raptors.png", arenaImage: "/arenas/raptors-arena.jpg", players: [{ name: "Raptors Player 1", image: "/players/raptors-player-1.jpg" }, { name: "Raptors Player 2", image: "/players/raptors-player-2.jpg" }] },
-  { name: "Chicago Bulls", coordinates: [-87.6742, 41.8807], logo: "/logos/bulls.png", arenaImage: "/arenas/bulls-arena.jpg", players: [{ name: "Bulls Player 1", image: "/players/bulls-player-1.jpg" }, { name: "Bulls Player 2", image: "/players/bulls-player-2.jpg" }] },
-  { name: "Cleveland Cavaliers", coordinates: [-81.6881, 41.4965], logo: "/logos/cavaliers.png", arenaImage: "/arenas/cavaliers-arena.jpg", players: [{ name: "Cavaliers Player 1", image: "/players/cavaliers-player-1.jpg" }, { name: "Cavaliers Player 2", image: "/players/cavaliers-player-2.jpg" }] },
-  { name: "Detroit Pistons", coordinates: [-83.0553, 42.3411], logo: "/logos/pistons.png", arenaImage: "/arenas/pistons-arena.jpg", players: [{ name: "Pistons Player 1", image: "/players/pistons-player-1.jpg" }, { name: "Pistons Player 2", image: "/players/pistons-player-2.jpg" }] },
-  { name: "Indiana Pacers", coordinates: [-86.1555, 39.7639], logo: "/logos/pacers.png", arenaImage: "/arenas/pacers-arena.jpg", players: [{ name: "Pacers Player 1", image: "/players/pacers-player-1.jpg" }, { name: "Pacers Player 2", image: "/players/pacers-player-2.jpg" }] },
-  { name: "Milwaukee Bucks", coordinates: [-87.9169, 43.0451], logo: "/logos/bucks.png", arenaImage: "/arenas/bucks-arena.jpg", players: [{ name: "Bucks Player 1", image: "/players/bucks-player-1.jpg" }, { name: "Bucks Player 2", image: "/players/bucks-player-2.jpg" }] },
-  { name: "Atlanta Hawks", coordinates: [-84.3963, 33.7573], logo: "/logos/hawks.png", arenaImage: "/arenas/hawks-arena.jpg", players: [{ name: "Hawks Player 1", image: "/players/hawks-player-1.jpg" }, { name: "Hawks Player 2", image: "/players/hawks-player-2.jpg" }] },
-  { name: "Charlotte Hornets", coordinates: [-80.8392, 35.2251], logo: "/logos/hornets.png", arenaImage: "/arenas/hornets-arena.jpg", players: [{ name: "Hornets Player 1", image: "/players/hornets-player-1.jpg" }, { name: "Hornets Player 2", image: "/players/hornets-player-2.jpg" }] },
-  { name: "Miami Heat", coordinates: [-80.187, 25.7814], logo: "/logos/heat.png", arenaImage: "/arenas/heat-arena.jpg", players: [{ name: "Heat Player 1", image: "/players/heat-player-1.jpg" }, { name: "Heat Player 2", image: "/players/heat-player-2.jpg" }] },
-  { name: "Orlando Magic", coordinates: [-81.3839, 28.5392], logo: "/logos/magic.png", arenaImage: "/arenas/magic-arena.jpg", players: [{ name: "Magic Player 1", image: "/players/magic-player-1.jpg" }, { name: "Magic Player 2", image: "/players/magic-player-2.jpg" }] },
-  { name: "Washington Wizards", coordinates: [-77.0209, 38.8981], logo: "/logos/wizards.png", arenaImage: "/arenas/wizards-arena.jpg", players: [{ name: "Wizards Player 1", image: "/players/wizards-player-1.jpg" }, { name: "Wizards Player 2", image: "/players/wizards-player-2.jpg" }] },
+  { name: "Golden State Warriors", coordinates: [-122.3877, 37.768], logo: "/logos/warriors.png", arenaImage: "/arenas/warriors-arena.jpg" },
+  { name: "Los Angeles Lakers", coordinates: [-118.2673, 34.043], logo: "/logos/lakers.png", arenaImage: "/arenas/lakers-arena.jpg" },
+  { name: "Los Angeles Clippers", coordinates: [-118.3431, 33.945], logo: "/logos/clippers.png", arenaImage: "/arenas/clippers-arena.jpg" },
+  { name: "Phoenix Suns", coordinates: [-112.0712, 33.4457], logo: "/logos/suns.png", arenaImage: "/arenas/suns-arena.jpg" },
+  { name: "Sacramento Kings", coordinates: [-121.4994, 38.5802], logo: "/logos/kings.png", arenaImage: "/arenas/kings-arena.jpg" },
+  { name: "Portland Trail Blazers", coordinates: [-122.6668, 45.5316], logo: "/logos/blazzers.png", arenaImage: "/arenas/blazers-arena.jpg" },
+  { name: "Utah Jazz", coordinates: [-111.9011, 40.7683], logo: "/logos/jazz.png", arenaImage: "/arenas/jazz-arena.jpg" },
+  { name: "Denver Nuggets", coordinates: [-105.0077, 39.7487], logo: "/logos/nuggets.png", arenaImage: "/arenas/nuggets-arena.jpg" },
+  { name: "Oklahoma City Thunder", coordinates: [-97.5151, 35.4634], logo: "/logos/thunder.png", arenaImage: "/arenas/thunder-arena.jpg" },
+  { name: "Minnesota Timberwolves", coordinates: [-93.276, 44.9795], logo: "/logos/timberwolves.png", arenaImage: "/arenas/timberwolves-arena.jpg" },
+  { name: "Dallas Mavericks", coordinates: [-96.8103, 32.7905], logo: "/logos/mavericks.png", arenaImage: "/arenas/mavericks-arena.jpg" },
+  { name: "Houston Rockets", coordinates: [-95.3621, 29.7508], logo: "/logos/rockets.png", arenaImage: "/arenas/rockets-arena.jpg" },
+  { name: "San Antonio Spurs", coordinates: [-98.4375, 29.427], logo: "/logos/spurs.png", arenaImage: "/arenas/spurs-arena.jpg" },
+  { name: "New Orleans Pelicans", coordinates: [-90.0815, 29.949], logo: "/logos/pelicans.png", arenaImage: "/arenas/pelicans-arena.jpg" },
+  { name: "Memphis Grizzlies", coordinates: [-90.0505, 35.1382], logo: "/logos/grizzlies.png", arenaImage: "/arenas/grizzlies-arena.jpg" },
+  { name: "Boston Celtics", coordinates: [-71.0622, 42.3662], logo: "/logos/celtics.png", arenaImage: "/arenas/celtics-arena.jpg" },
+  { name: "Brooklyn Nets", coordinates: [-73.9754, 40.6826], logo: "/logos/nets.png", arenaImage: "/arenas/nets-arena.jpg" },
+  { name: "New York Knicks", coordinates: [-73.9934, 40.7505], logo: "/logos/knicks.png", arenaImage: "/arenas/knicks-arena.jpg" },
+  { name: "Philadelphia 76ers", coordinates: [-75.1719, 39.9012], logo: "/logos/sixers.png", arenaImage: "/arenas/sixers-arena.jpg" },
+  { name: "Toronto Raptors", coordinates: [-79.3791, 43.6435], logo: "/logos/raptors.png", arenaImage: "/arenas/raptors-arena.jpg" },
+  { name: "Chicago Bulls", coordinates: [-87.6742, 41.8807], logo: "/logos/bulls.png", arenaImage: "/arenas/bulls-arena.jpg" },
+  { name: "Cleveland Cavaliers", coordinates: [-81.6881, 41.4965], logo: "/logos/cavaliers.png", arenaImage: "/arenas/cavaliers-arena.jpg" },
+  { name: "Detroit Pistons", coordinates: [-83.0553, 42.3411], logo: "/logos/pistons.png", arenaImage: "/arenas/pistons-arena.jpg" },
+  { name: "Indiana Pacers", coordinates: [-86.1555, 39.7639], logo: "/logos/pacers.png", arenaImage: "/arenas/pacers-arena.jpg" },
+  { name: "Milwaukee Bucks", coordinates: [-87.9169, 43.0451], logo: "/logos/bucks.png", arenaImage: "/arenas/bucks-arena.jpg" },
+  { name: "Atlanta Hawks", coordinates: [-84.3963, 33.7573], logo: "/logos/hawks.png", arenaImage: "/arenas/hawks-arena.jpg" },
+  { name: "Charlotte Hornets", coordinates: [-80.8392, 35.2251], logo: "/logos/hornets.png", arenaImage: "/arenas/hornets-arena.jpg" },
+  { name: "Miami Heat", coordinates: [-80.187, 25.7814], logo: "/logos/heat.png", arenaImage: "/arenas/heat-arena.jpg" },
+  { name: "Orlando Magic", coordinates: [-81.3839, 28.5392], logo: "/logos/magic.png", arenaImage: "/arenas/magic-arena.jpg" },
+  { name: "Washington Wizards", coordinates: [-77.0209, 38.8981], logo: "/logos/wizards.png", arenaImage: "/arenas/wizards-arena.jpg" },
 ];
 
 function getPanelDetails(team) {
@@ -309,6 +307,40 @@ const EMPTY_LIVE_EVENTS_STATE = {
   loaded: false,
   error: null,
 };
+
+const ROAD_TRIP_SOURCE_ID = "nba-road-trip-route";
+const ROAD_TRIP_LAYER_ID = "nba-road-trip-route-line";
+
+function createRoadTripMarker(label, variant) {
+  const marker = document.createElement("div");
+  marker.className =
+    variant === "start"
+      ? "flex h-8 items-center justify-center whitespace-nowrap rounded-full border-2 border-white bg-cyan-500 px-3 text-[11px] font-bold text-white shadow-lg shadow-cyan-950/40"
+      : "flex h-8 items-center justify-center whitespace-nowrap rounded-full border-2 border-white bg-emerald-600 px-3 text-[11px] font-bold text-white shadow-lg shadow-emerald-950/40";
+  marker.textContent = label;
+  return marker;
+}
+
+function isValidRoadTripCoordinate(coordinate) {
+  return (
+    Number.isFinite(coordinate?.lat) &&
+    Number.isFinite(coordinate?.lng) &&
+    Math.abs(coordinate.lat) <= 90 &&
+    Math.abs(coordinate.lng) <= 180
+  );
+}
+
+function clearRoadTripVisuals(map, markers) {
+  markers.forEach((marker) => marker.remove());
+
+  if (map.getLayer(ROAD_TRIP_LAYER_ID)) {
+    map.removeLayer(ROAD_TRIP_LAYER_ID);
+  }
+
+  if (map.getSource(ROAD_TRIP_SOURCE_ID)) {
+    map.removeSource(ROAD_TRIP_SOURCE_ID);
+  }
+}
 
 function formatPriceLevel(priceLevel) {
   if (!priceLevel) {
@@ -338,7 +370,7 @@ function RestaurantsTab({
   onRefresh,
 }) {
   return (
-    <div className="px-5 py-4">
+    <div className="py-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -368,20 +400,20 @@ function RestaurantsTab({
       </div>
 
       {!hasCoordinates ? (
-        <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-4 text-sm text-zinc-300">
+        <div className="rounded-lg border border-white/8 bg-white/[0.04] p-4 text-sm text-zinc-300">
           Select an arena or enable location to find nearby restaurants.
         </div>
       ) : null}
 
       {hasCoordinates && isLoading ? (
         <div className="space-y-3">
-          <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/10 p-4 text-sm text-cyan-100">
+          <div className="rounded-lg border border-cyan-300/15 bg-cyan-300/10 p-4 text-sm text-cyan-100">
             Finding restaurants near this arena...
           </div>
           {[0, 1, 2].map((item) => (
             <div
               key={item}
-              className="rounded-[24px] border border-white/8 bg-[#232834] p-4"
+              className="rounded-lg border border-white/8 bg-[#202631] p-4"
             >
               <div className="h-5 w-2/3 animate-pulse rounded bg-white/8" />
               <div className="mt-3 flex gap-2">
@@ -395,14 +427,14 @@ function RestaurantsTab({
       ) : null}
 
       {hasCoordinates && !isLoading && error ? (
-        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
+        <div className="rounded-lg border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
           Could not load restaurants right now.
         </div>
       ) : null}
 
       {hasCoordinates && !isLoading && !error && !restaurants.length ? (
-        <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-4 text-sm text-zinc-300">
-          No nearby restaurants found for this arena.
+        <div className="rounded-lg border border-white/8 bg-white/[0.04] p-4 text-sm text-zinc-300">
+          No nearby restaurants found yet.
         </div>
       ) : null}
 
@@ -415,11 +447,11 @@ function RestaurantsTab({
             return (
               <article
                 key={restaurant.id}
-                className="rounded-[24px] border border-white/8 bg-[#232834] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.14)]"
+                className="rounded-lg border border-white/8 bg-[#202631] p-4 shadow-[0_14px_28px_rgba(0,0,0,0.12)] transition hover:border-white/15"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h4 className="truncate text-[15px] font-semibold text-white">
+                    <h4 className="break-words text-[15px] font-semibold text-white">
                       {restaurant.name}
                     </h4>
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-zinc-300">
@@ -471,7 +503,7 @@ function RestaurantsTab({
                         href={restaurant.googleMapsUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#0b9d43] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#10ad4b]"
+                        className="inline-flex items-center gap-2 rounded-md bg-[#0b9d43] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#10ad4b]"
                       >
                         Open in Maps
                         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
@@ -482,7 +514,7 @@ function RestaurantsTab({
                         href={restaurant.websiteUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/8 hover:text-white"
+                        className="inline-flex items-center gap-2 rounded-md border border-white/8 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/8 hover:text-white"
                       >
                         Website
                         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
@@ -499,15 +531,20 @@ function RestaurantsTab({
   );
 }
 
-export default function ArenaMap({ onSelectedTeamChange }) {
+export default function ArenaMap({
+  onSelectedTeamChange,
+  activeRoadTrip,
+  onClearRoadTrip,
+}) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
+  const roadTripMarkersRef = useRef([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelWidth, setPanelWidth] = useState(420);
   const [isResizing, setIsResizing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState("players");
+  const [activeTab, setActiveTab] = useState("arena");
   const [brokenImages, setBrokenImages] = useState({});
   const [liveEventsByTeam, setLiveEventsByTeam] = useState({});
   const [restaurants, setRestaurants] = useState([]);
@@ -603,7 +640,7 @@ export default function ArenaMap({ onSelectedTeamChange }) {
         const details = getPanelDetails(team);
         setSelectedTeam(team);
         setPanelOpen(true);
-        setActiveTab("players");
+        setActiveTab("arena");
         setIsExpanded(false);
         setPanelWidth(420);
         setRestaurants([]);
@@ -633,6 +670,124 @@ export default function ArenaMap({ onSelectedTeamChange }) {
       mapRef.current = null;
     };
   }, [onSelectedTeamChange]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map) {
+      return;
+    }
+
+    const clearRoute = () => {
+      clearRoadTripVisuals(map, roadTripMarkersRef.current);
+      roadTripMarkersRef.current = [];
+    };
+    const drawRoute = () => {
+      clearRoute();
+
+      if (!activeRoadTrip) {
+        return;
+      }
+
+      try {
+        const startCoordinate = activeRoadTrip.startLocation.coordinates;
+        const validStops = activeRoadTrip.stops.filter((stop) =>
+          isValidRoadTripCoordinate(stop.coordinates)
+        );
+        const routeCoordinates = [
+          startCoordinate,
+          ...validStops.map((stop) => stop.coordinates),
+        ]
+          .filter(isValidRoadTripCoordinate)
+          .map((coordinate) => [coordinate.lng, coordinate.lat]);
+
+        if (
+          !isValidRoadTripCoordinate(startCoordinate) ||
+          routeCoordinates.length < 2
+        ) {
+          return;
+        }
+
+        // This straight polyline can later be replaced with a Directions API route.
+        map.addSource(ROAD_TRIP_SOURCE_ID, {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "LineString",
+              coordinates: routeCoordinates,
+            },
+          },
+        });
+        map.addLayer({
+          id: ROAD_TRIP_LAYER_ID,
+          type: "line",
+          source: ROAD_TRIP_SOURCE_ID,
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+          paint: {
+            "line-color": "#22d3ee",
+            "line-opacity": 0.85,
+            "line-width": 5,
+          },
+        });
+
+        const markerCoordinates = [
+          {
+            label: "Start",
+            variant: "start",
+            coordinates: startCoordinate,
+          },
+          ...validStops.map((stop) => ({
+            label: `Day ${stop.day}`,
+            variant: "stop",
+            coordinates: stop.coordinates,
+          })),
+        ].filter((marker) => isValidRoadTripCoordinate(marker.coordinates));
+
+        roadTripMarkersRef.current = markerCoordinates.map((marker) =>
+          new mapboxgl.Marker({
+            element: createRoadTripMarker(marker.label, marker.variant),
+          })
+            .setLngLat([marker.coordinates.lng, marker.coordinates.lat])
+            .addTo(map)
+        );
+
+        const bounds = new mapboxgl.LngLatBounds();
+        const horizontalPadding = Math.min(
+          500,
+          Math.max(48, window.innerWidth * 0.42)
+        );
+        routeCoordinates.forEach((coordinate) => bounds.extend(coordinate));
+        map.fitBounds(bounds, {
+          padding: {
+            top: 72,
+            right: horizontalPadding,
+            bottom: 72,
+            left: 48,
+          },
+          maxZoom: 7,
+          duration: 900,
+        });
+      } catch (error) {
+        console.warn("Could not draw the NBA road trip route.", error);
+      }
+    };
+
+    if (map.isStyleLoaded()) {
+      drawRoute();
+    } else {
+      map.once("load", drawRoute);
+    }
+
+    return () => {
+      map.off("load", drawRoute);
+      clearRoute();
+    };
+  }, [activeRoadTrip]);
 
   useEffect(() => {
     const shouldLoadLiveEvents =
@@ -854,10 +1009,6 @@ export default function ArenaMap({ onSelectedTeamChange }) {
   const renderPanelContent = () => {
     if (!selectedTeam || !panelDetails) return null;
 
-    if (activeTab === "players") {
-      return <PlayersTab players={selectedTeam.players} />;
-    }
-
     if (activeTab === "arena") {
       const [lat, lng] = [
         selectedTeam.coordinates[1],
@@ -882,7 +1033,7 @@ export default function ArenaMap({ onSelectedTeamChange }) {
       return (
         <TicketmasterEventsTab
           title="Upcoming Games"
-          emptyMessage="No upcoming Ticketmaster events found for this team."
+          emptyMessage="No upcoming games found for this arena."
           events={selectedTeamEventsState.events}
           isLoading={selectedTeamEventsState.loading}
           error={selectedTeamEventsState.error}
@@ -897,7 +1048,7 @@ export default function ArenaMap({ onSelectedTeamChange }) {
       return (
         <TicketmasterEventsTab
           title="Ticketmaster Tickets"
-          emptyMessage="No upcoming Ticketmaster ticketed events found for this team."
+          emptyMessage="No upcoming games found for this arena."
           events={selectedTeamEventsState.events}
           isLoading={selectedTeamEventsState.loading}
           error={selectedTeamEventsState.error}
@@ -925,7 +1076,11 @@ export default function ArenaMap({ onSelectedTeamChange }) {
     <div className="relative h-[calc(100vh-120px)] w-full overflow-hidden rounded-lg border border-zinc-800">
       <div ref={mapContainer} className="h-full w-full" />
 
-      {panelOpen && selectedTeam && panelDetails ? (
+      {activeRoadTrip ? (
+        <RoadTripPanel roadTrip={activeRoadTrip} onClear={onClearRoadTrip} />
+      ) : null}
+
+      {!activeRoadTrip && panelOpen && selectedTeam && panelDetails ? (
         <>
           <button
             type="button"
@@ -972,7 +1127,7 @@ export default function ArenaMap({ onSelectedTeamChange }) {
                     onImageError={() => handleImageError(selectedTeam.arenaImage)}
                   />
                 ) : (
-                  <div className="relative mx-5 mt-8 aspect-video overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top,#134e4a_0%,#0f172a_36%,#020617_100%)] sm:mx-6">
+                  <div className="relative mx-5 mt-8 aspect-video overflow-hidden rounded-lg bg-[radial-gradient(circle_at_top,#134e4a_0%,#0f172a_36%,#020617_100%)] sm:mx-6">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={selectedTeam.logo}
@@ -1003,7 +1158,7 @@ export default function ArenaMap({ onSelectedTeamChange }) {
                   </div>
                 )}
 
-                <div className="mx-5 mt-6 grid grid-cols-5 gap-2 border-b border-white/8 pb-5 sm:mx-6">
+                <div className="mx-5 mt-5 grid grid-cols-4 gap-1.5 border-b border-white/8 pb-4 sm:mx-6 sm:gap-2">
                   {PANEL_TABS.map((tab) => {
                     const Icon = tab.icon;
 
