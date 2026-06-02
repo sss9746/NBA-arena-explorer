@@ -95,15 +95,7 @@ version can replace it with turn-by-turn driving directions.
 The Ticketmaster, Google Places, and OpenAI keys are read only inside server
 route handlers. Do not prefix those secrets with `NEXT_PUBLIC_`.
 
-## Screenshots
 
-Add screenshots here:
-
-<!-- Add screenshot: Arena map with NBA team markers -->
-<!-- Add screenshot: Arena side panel -->
-<!-- Add screenshot: Silver AI chat -->
-<!-- Add screenshot: Road trip route with Start and Day markers -->
-<!-- Add screenshot: Nearby restaurant cards -->
 
 ## Getting Started
 
@@ -178,47 +170,7 @@ npx tsc --noEmit # Run TypeScript checks without writing files
 ```
 
 ## Deployment on Vercel
-
-Vercel detects this repository as a Next.js application automatically. A
-`vercel.json` file is not required.
-
-### Deploy from GitHub
-
-1. Push the repository to GitHub.
-2. Sign in to [Vercel](https://vercel.com/).
-3. Choose **Add New Project** and import the GitHub repository.
-4. Keep the detected Next.js framework settings.
-5. Add the four required environment variables under **Project Settings >
-   Environment Variables**.
-6. Deploy the project.
-7. Redeploy after changing environment variables.
-
-For production, add `NEXT_PUBLIC_MAPBOX_TOKEN` before the build begins because
-Next.js embeds public environment variables into the browser bundle at build
-time.
-
-### Deploy with the Vercel CLI
-
-Install the CLI and follow its login prompts:
-
-```bash
-npm install -g vercel
-vercel
-vercel --prod
-```
-
-## Demo Walkthrough
-
-1. Open the app.
-2. Select an NBA arena marker on the map.
-3. Review the arena and team information.
-4. Open **Games** to view upcoming Ticketmaster events.
-5. Open **Food** to view nearby restaurant recommendations.
-6. Open Silver AI from the navigation bar.
-7. Ask: `Plan me a 3-day NBA road trip from Dallas.`
-8. Review the generated itinerary and summary panel.
-9. Show the route, Start marker, and Day markers drawn on the map.
-10. Select **Clear Road Trip** to restore the normal arena map.
+https://nba-arena-explorer.vercel.app
 
 ## Project Structure
 
